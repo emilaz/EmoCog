@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[3]:
 
 
 #%matplotlib inline
@@ -22,27 +22,30 @@ from datetime import datetime
 import warnings
 
 
-# In[2]:
+# In[4]:
 
 
 #create a ECOG PCA class for its PCA object, hyperparas and other stuff
 class Feature_generator:
-    def __init__(self,path,pca_obj=None,wsize=30):
+    def __init__(self,path,pca_obj=None,wsize=30, prefiltered=True):
         self.pca=pca_obj
         #hyperpara in s for how large the time window should be on whihc we calculate our fourier trafo
         self.wsize=wsize
         #sampling frequency and last sample taken
         df=h5py.File(path)
-        #TODO THIS IS ENTERED MANUALLY FOR DAY 4, PAT c46fd46!!! CHANGE TO READ FROM FILE ONCE AVAILBABLE
-        start_sample=12839700 #calculated from 7h7m59s400ms
-        end_sample=34437392 #calc from 19h7m54s783ms
-        #preprocess data
-        preprocessor=Preprocessor(df,start_sample=start_sample,end_sample=end_sample)
-        self.data,self.bad_chan,self.bad_idx=preprocessor.preprocess()
-        self.data=self.data[self.bad_chan!=True]
         self.sfreq=int(df['f_sample'][()])
-#             #how many samples in this dataset?
-        self.end=self.data.shape[1]-1
+        #TODO THIS IS ENTERED MANUALLY FOR DAY 4, PAT c46fd46!!! CHANGE TO READ FROM FILE ONCE AVAILBABLE
+        ### I think this is wrong...this somehow assumes we really start a 12AM, but we don't..
+#         start_sample=12839700 #calculated from 7h7m59s400ms
+#         end_sample=34437392 #calc from 19h7m54s783ms
+        ###so the actual portion of the data we want is this, in s
+        self.start=11
+        self.end=43205
+        #preprocess data
+        preprocessor=Preprocessor(df,start_sample=int(start*500),end_sample=int(end*500))
+        self.data,self.bad_chan,self.bad_idx=preprocessor.preprocess(prefiltered_sd_kurt=prefiltered)
+        self.data=self.data[self.bad_chan!=True]
+        #how many samples in this dataset?
         self._bin_data()
         self.pca=None
             
@@ -53,9 +56,8 @@ class Feature_generator:
     #This function also creates a mask of bins to discard from the bad_idx array
     def _bin_data(self):
         #where to end?
-        end=self.end//self.sfreq
-        self.data_bin=self.data[:,:end*self.sfreq].reshape(self.data.shape[0],end,self.sfreq)
-        self.mask_bin=np.all(self.bad_idx[:end*self.sfreq].reshape(end,self.sfreq),axis=1)
+        self.data_bin=self.data[:,:self.end*self.sfreq].reshape(self.data.shape[0],self.end,self.sfreq)
+        self.mask_bin=np.all(self.bad_idx[:self.end*self.sfreq].reshape(self.end,self.sfreq),axis=1)
 
       
     def _standardize(self, data,ax=0):
@@ -149,12 +151,12 @@ class Feature_generator:
             plt.plot(data[p])
         plt.show()
     
-    def vis_welch_data(self,start,stop,no_chan=None):
+    def vis_welch_data(self,start,stop,chans=None):
         #account for wsize
         start=int(start/self.wsize)
         stop=int(stop/self.wsize)
         rem=self.curr_data[:,start:stop]
-        plt.imshow(np.log(rem),cmap='viridis',aspect='auto')
+        plt.imshow(rem,cmap='viridis',aspect='auto')
         
     def vis_pc(self):
         if self.pca is None:
@@ -208,10 +210,10 @@ class Feature_generator:
         
 
 
-# In[3]:
+# In[5]:
 
 
-#pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5')
+pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False)
 
 # wut=pecog.generate_labels(0,30000)
 

@@ -31,15 +31,11 @@ class Preprocessor:
         unique_entr_per_chan=np.count_nonzero(np.diff(np.sort(self.df)), axis=1)+1
         #which channels have only few entries? Throw away
         self.bad_chans=unique_entr_per_chan<10
-        print(self.bad_chans.shape)
-        #also, throw away channels with a STD that reallt deviates from rest (for now)
         if(prefiltered_sd_kurt):
             #convert the goodchan indices to a bad chan boolean mask
             temp=np.ones(self.df.shape[0],dtype='bool')
             temp[self.data['goodChanInds']]=False
-            print(temp.shape)
             self.bad_chans=np.logical_or(self.bad_chans,temp)
-            print(self.bad_chans.shape)
         else:
             all_std=self.data['SD_channels'][()]
             std_std=np.std(all_std)
