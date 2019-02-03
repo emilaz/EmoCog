@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[3]:
+# In[ ]:
 
 
 #%matplotlib inline
@@ -22,7 +22,7 @@ from datetime import datetime
 import warnings
 
 
-# In[4]:
+# In[ ]:
 
 
 #create a ECOG PCA class for its PCA object, hyperparas and other stuff
@@ -42,7 +42,7 @@ class Feature_generator:
         self.start=11
         self.end=43205
         #preprocess data
-        preprocessor=Preprocessor(df,start_sample=int(start*500),end_sample=int(end*500))
+        preprocessor=Preprocessor(df,start_sample=int(self.start*self.sfreq),end_sample=int(self.end*self.sfreq))
         self.data,self.bad_chan,self.bad_idx=preprocessor.preprocess(prefiltered_sd_kurt=prefiltered)
         self.data=self.data[self.bad_chan!=True]
         #how many samples in this dataset?
@@ -210,10 +210,10 @@ class Feature_generator:
         
 
 
-# In[5]:
+# In[ ]:
 
 
-pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False)
+#pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False)
 
 # wut=pecog.generate_labels(0,30000)
 

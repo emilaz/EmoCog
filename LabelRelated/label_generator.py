@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[2]:
+# In[39]:
 
 
 import numpy as np
@@ -10,13 +10,16 @@ import pandas as pd
 import warnings
 
 
-# In[47]:
+# In[43]:
 
 
 class Label_generator:
     def __init__(self,path,wsize=30,start=0,stop=None):
-        self.df=pd.read_csv(path,error_bad_lines=False, low_memory=False)#,dtype={'realtime':'datetime64'})
-        self.fps=32
+        if path.endswith('.csv'):
+            self.df=pd.read_csv(path,error_bad_lines=False, low_memory=False)#,dtype={'realtime':'datetime64'})
+        elif path.endswith('.hdf'):
+            self.df=pd.read_hdf(path,error_bad_lines=False, low_memory=False)#,dtype={'realtime':'datetime64'})
+        self.fps=31
         #account for 30FPS
         self.start=start*self.fps
         if stop is None:
@@ -24,15 +27,15 @@ class Label_generator:
         else:
             self.stop=stop*self.fps
         self.wsize=wsize
-        self.df=self.df.loc[start:stop,self.df.columns!= 'datetime']
+        self.df=self.df.iloc[start:stop]#,self.df.columns!= 'datetime']
         #self._convert_to_unix_time()
         self._bin_preds()
     
     #not needed atm    
-    def _convert_to_unix_time(self):        
-        #unix time in miliseconds
-        newcol = (pd.DatetimeIndex(self.df['realtime'])).astype(np.int64)//10**(6)
-        self.df=self.df.assign(unix_time=newcol)
+#     def _convert_to_unix_time(self):        
+#         #unix time in miliseconds
+#         newcol = (pd.DatetimeIndex(self.df['realtime'])).astype(np.int64)//10**(6)
+#         self.df=self.df.assign(unix_time=newcol)
     
     def _bin_preds(self):
         annot=self.df['Happy_predicted'].values
@@ -44,6 +47,7 @@ class Label_generator:
     #if a classification method is used, we need a cutoff somewhere :)
     def generate_labels(self,start=0, end=None, mask=None, sliding_window= False,method='ratio', cutoff=.07):
         if mask is None:
+            print('Warning. No filtering mask for bad data point was given. Assuming perfectly clean dataset.')
             mask=np.zeros(self.pred_bin.shape[1],dtype='bool')
         if end is None:
             end=self.pred_bin.shape[1]-1
@@ -87,14 +91,12 @@ class Label_generator:
         return self.labels
 
 
-# In[48]:
+# In[45]:
 
 
-#test=Label_generator('/home/emil/data/hdf_data/cb46fd46_8_realtime.csv')
+#test=Label_generator('/home/emil/data/hdf_data/cb46fd46_8_imp_columns.hdf',start=30,stop=900)
 
-# test.generate_labels(start=0, end=300000,method='ratio',mask=np.zeros(760524,dtype='bool'))
-
-
+# mas=test.generate_labels(start=0, end=30000,method='ratio',mask=None)
 
 # # plt.plot(np.mean(test.pred_bin,axis=0))
 # # plt.xlabel('sec')
