@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[39]:
+# In[ ]:
 
 
 import numpy as np
@@ -10,7 +10,7 @@ import pandas as pd
 import warnings
 
 
-# In[43]:
+# In[ ]:
 
 
 class Label_generator:
@@ -27,7 +27,7 @@ class Label_generator:
         else:
             self.stop=stop*self.fps
         self.wsize=wsize
-        self.df=self.df.iloc[start:stop]#,self.df.columns!= 'datetime']
+        self.df=self.df.iloc[self.start:self.stop]#,self.df.columns!= 'datetime']
         #self._convert_to_unix_time()
         self._bin_preds()
     
@@ -91,10 +91,10 @@ class Label_generator:
         return self.labels
 
 
-# In[45]:
+# In[ ]:
 
 
-#test=Label_generator('/home/emil/data/hdf_data/cb46fd46_8_imp_columns.hdf',start=30,stop=900)
+#test=Label_generator('/home/emil/data/hdf_data/cb46fd46_8_imp_columns.hdf',start=11,stop=43205)
 
 # mas=test.generate_labels(start=0, end=30000,method='ratio',mask=None)
 

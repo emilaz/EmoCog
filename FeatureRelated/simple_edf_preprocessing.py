@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import h5py
 
 
-# In[2]:
+# In[ ]:
 
 
 class Preprocessor:
@@ -83,17 +83,25 @@ class Preprocessor:
         
 
 
-# In[3]:
+# In[ ]:
 
 
 # df=h5py.File('/data2/users/stepeter/Preprocessing/processed_a0f66459_4.h5')
-# pr=Preprocessor(df,start_sample=12839700,end_sample=34437392)
+# pr=Preprocessor(df,start_sample=11*500,end_sample=43205*500)
 
 
-# In[4]:
+# In[ ]:
 
 
 # dat,tt,tw=pr.preprocess()
+
+
+# In[ ]:
+
+
+# print(dat.shape)
+# print(tt.shape)
+# tw.shape
 
 
 # In[ ]:

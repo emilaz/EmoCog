@@ -56,8 +56,8 @@ class Feature_generator:
     #This function also creates a mask of bins to discard from the bad_idx array
     def _bin_data(self):
         #where to end?
-        self.data_bin=self.data[:,:self.end*self.sfreq].reshape(self.data.shape[0],self.end,self.sfreq)
-        self.mask_bin=np.all(self.bad_idx[:self.end*self.sfreq].reshape(self.end,self.sfreq),axis=1)
+        self.data_bin=self.data.reshape(self.data.shape[0],self.end-self.start,self.sfreq)
+        self.mask_bin=np.all(self.bad_idx.reshape(self.end-self.start,self.sfreq),axis=1)
 
       
     def _standardize(self, data,ax=0):
@@ -111,6 +111,7 @@ class Feature_generator:
             
             #is this thing empty? continue
             if not curr_data.size:
+                print('Warning. A whole chunck of %d s of data was thrown away here. Check if this is correct' %wsize)
                 if(sliding_window):
                     time_it+=1
                 else:
@@ -134,7 +135,7 @@ class Feature_generator:
                 time_it+=1
             else:
                 time_it+=self.wsize
-            if time_it+self.wsize >= time_stp:
+            if time_it+self.wsize >= time_stp+1:
                 break
                 
         data_scal=self._standardize(mat.T)
@@ -213,11 +214,7 @@ class Feature_generator:
 # In[ ]:
 
 
-#pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False)
-
-# wut=pecog.generate_labels(0,30000)
-
-# print(wut.shape)
+# pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False,wsize=300)
 
 # for p in range(pecog.pca.n_components):
 #     plt.plot(wut[:,p])
@@ -262,4 +259,12 @@ class Feature_generator:
 # #plt.ylim(-0.00001,0.00001)
 
 # #max(data_trafo[:,1])-min(data_trafo[:,1])
+
+
+# In[ ]:
+
+
+# wut=pecog.generate_features(0,30000)
+
+# print(wut.shape)
 
