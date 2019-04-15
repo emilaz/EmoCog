@@ -1,25 +1,20 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[4]:
 
 
 #%matplotlib inline
-
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import mne
 from sklearn.decomposition import PCA
-from sklearn import datasets
 from scipy import signal
-from tqdm import tqdm
-import seaborn as sns
-from matplotlib import pyplot
-import h5py
-from simple_edf_preprocessing import Preprocessor
-from datetime import datetime
 import warnings
+#this is needed when using pipeline. else, get rid of point.
+from .Util import *
+# import sys
+# sys.path.append('/home/stepeter/AJILE/stepeter_sandbox/ECoG_Preprocessing')
+# from BrainPlot import *
 
 
 # In[ ]:
@@ -27,69 +22,16 @@ import warnings
 
 #create a ECOG PCA class for its PCA object, hyperparas and other stuff
 class Feature_generator:
-    def __init__(self,path,pca_obj=None,wsize=30, prefiltered=True):
-        self.pca=pca_obj
+
+    def __init__(self,dataholder,wsize=30):
         #hyperpara in s for how large the time window should be on whihc we calculate our fourier trafo
-        self.wsize=wsize
+        self.wsize = wsize
         #sampling frequency and last sample taken
-        df=h5py.File(path)
-        self.sfreq=int(df['f_sample'][()])
-        #TODO THIS IS ENTERED MANUALLY FOR DAY 4, PAT c46fd46!!! CHANGE TO READ FROM FILE ONCE AVAILBABLE
-        ### I think this is wrong...this somehow assumes we really start a 12AM, but we don't..
-#         start_sample=12839700 #calculated from 7h7m59s400ms
-#         end_sample=34437392 #calc from 19h7m54s783ms
-        ###so the actual portion of the data we want is this, in s
-        self.start=11
-        self.end=43205
-        #preprocess data
-        preprocessor=Preprocessor(df,start_sample=int(self.start*self.sfreq),end_sample=int(self.end*self.sfreq))
-        self.data,self.bad_chan,self.bad_idx=preprocessor.preprocess(prefiltered_sd_kurt=prefiltered)
-        self.data=self.data[self.bad_chan!=True]
-        #how many samples in this dataset?
-        self._bin_data()
-        self.pca=None
-            
-    
-    #this function restructures the data into a 3D structure, where each row presents a channel, each column one second
-    #and the depth is the amount of samples per seconds (sfreq). 
-    #This is to discard seconds where bad_idx are present and to be on par with the labels in the end
-    #This function also creates a mask of bins to discard from the bad_idx array
-    def _bin_data(self):
-        #where to end?
-        self.data_bin=self.data.reshape(self.data.shape[0],self.end-self.start,self.sfreq)
-        self.mask_bin=np.all(self.bad_idx.reshape(self.end-self.start,self.sfreq),axis=1)
+        self.sfreq = dataholder.sfreq
+        self.data_bin, self.mask_bin = dataholder.get_bin_data_and_mask()
+        self.pca = None
 
-      
-    def _standardize(self, data,ax=0):
-        self.data_mean=np.mean(data,axis=ax)
-        data_dem=data-self.data_mean
-        std=np.std(data,axis=ax)
-        data_stand=data_dem/std
-        #self.data_scal=1000000
-        #data_scal=self.data_scal*data_dem
-        #return data_scal
-        return data_stand
-    
-#this function caps at 150Hz, then bins the data in a logarithmic fashion to account for smaller psd values in higher freqs
-    def _bin_psd(self,fr,psd):
-        fr_trun=fr[fr<=150]
-        fr_total=len(fr_trun)
-        fr_bins=np.arange(int(np.log2(fr_total)+1))
-        #truncate everythin above 150Hz
-        psd=psd[:,fr<=150]
-        psd_bins=np.zeros((psd.shape[0],len(fr_bins)))
-        prev=0
-        max_psd_per_bin=np.exp2(fr_bins).astype('int')
-        prev=0
-        for b in fr_bins:
-            if (b==len(fr_bins) or max_psd_per_bin[b]>=psd.shape[1]):
-                psd_bins[:,b]+=np.sum(psd[:,prev:],axis=1)
-            else:
-                psd_bins[:,b]=np.sum(psd[:,prev:max_psd_per_bin[b]],axis=1)
-            prev=max_psd_per_bin[b]
-        return fr_bins, psd_bins
 
-        
     #create matrix as follows:
     #columns: channels, for each channel the 200 frequencies (0-200Hz) (hece freq*cha length) BUT BINNED logarithmically
     #rows: Time steps
@@ -107,13 +49,13 @@ class Feature_generator:
             #Note that each column is exactly one second.
             #get data in range of ALL channels, applying the following mask to filter out seconds with a bad index
             mask=np.ma.compressed(np.ma.masked_array(range(time_it,stop),mask=self.mask_bin[time_it:stop]))
-            curr_data=self.data_bin[:,mask,:].reshape(self.data.shape[0],-1)
+            curr_data=self.data_bin[:,mask,:].reshape(self.data_bin.shape[0],-1)
             
             #is this thing empty? continue
             if not curr_data.size:
                 print('Warning. A whole chunck of %d s of data was thrown away here. Check if this is correct' %wsize)
                 if(sliding_window):
-                    time_it+=1
+                    time_it+=sliding_window
                 else:
                     time_it+=self.wsize
                 if time_it+self.wsize >= time_stp:
@@ -121,8 +63,8 @@ class Feature_generator:
                 continue
                 
             #welch method 
-            fr,psd=signal.welch(curr_data,self.sfreq)
-            fr_bin,psd_bin=self._bin_psd(fr,psd)
+            fr,psd=signal.welch(curr_data,self.sfreq,nperseg=250)
+            fr_bin,psd_bin=bin_psd(fr,psd)
             if time_it==time_sta:
                 self.fr_bin=fr_bin
                 #first time. create first column, flatten w/o argument is row major 
@@ -132,80 +74,29 @@ class Feature_generator:
                 mat=np.column_stack((mat,psd_bin.flatten()))
             #sliding window?
             if (sliding_window):
-                time_it+=1
+                time_it+=sliding_window
             else:
                 time_it+=self.wsize
             if time_it+self.wsize >= time_stp+1:
                 break
-                
-        data_scal=self._standardize(mat.T)
-        self.curr_data=data_scal
+#        self.temp_mat=mat.T
+        data_scal=standardize(mat.T)
         return data_scal
     
-    def vis_raw_data(self, start, stop, chans=None):
-        if chans is None:
-            chans=range(self.data.shape[0])
-        st=int(start*self.sfreq)
-        stp=int(stop*self.sfreq)
-        data=self.data[chans,st:stp]
-        for p in range(0,len(chans)-1):
-            plt.plot(data[p])
-        plt.show()
     
-    def vis_welch_data(self,start,stop,chans=None):
-        #account for wsize
-        start=int(start/self.wsize)
-        stop=int(stop/self.wsize)
-        rem=self.curr_data[:,start:stop]
-        plt.imshow(rem,cmap='viridis',aspect='auto')
-        
-    def vis_pc(self):
-        if self.pca is None:
-            raise ValueError('PCA not set up yet. Please call setup_PCA first.')
-        for p in range(self.pca.n_components):
-            plt.plot(self.pca.transform(self.curr_data)[:,p])
-        plt.xlabel('Time (in w_size)')
-        plt.ylabel('PC Value')
-        plt.title('First %d principal components' % self.pca.n_components)
-        plt.show()
-
-    #get elbow curve. This also outputs the optimal n_components for the given desired explained variancce.
-    def __elbow_curve(self,datapart,expl_var_lim):
-        components = range(1, datapart.shape[1] + 1)
-        explained_variance = []
-        #till where?
-        lim=min(100, datapart.shape[1])
-        count=0
-        for component in tqdm(components[:lim]):
-            pca = PCA(n_components=component)
-            pca.fit(datapart)
-            expl_var=sum(pca.explained_variance_ratio_)
-            explained_variance.append(expl_var)
-            count+=1
-            if(expl_var>(expl_var_lim/100.)):
-                optimal_no_comps=count
-                break
-        if(explained_variance[-1:][0]<(expl_var_lim/100.)):
-            print('Could not explain more than %d %% of the variance. n_comps is set to match this. Consider increasing data range or lowering demanded explained variance' % expl_var*100)
-            optimal_no_comps=components[-1:]
-        sns_plot = sns.regplot(
-            x=np.array(components[:count]), y=explained_variance,
-            fit_reg=False).get_figure()
-        return optimal_no_comps
-    
-    def _setup_PCA(self,train,expl_variance):
+    def _setup_PCA(self,curr_data,train,expl_variance):
         if not train and self.pca is None:
             raise ValueError('Train set has to be generated first, otherwise no principal axis available for data trafo.')
         if train:
             print('Setting up PCA on current data range...')
-            no_comps=self.__elbow_curve(self.curr_data,expl_variance)
+            no_comps=get_no_comps(curr_data,expl_variance)
             self.pca=PCA(n_components=no_comps)
-            self.pca.fit(self.curr_data)
-        return self.pca.transform(self.curr_data)
+            self.pca.fit(curr_data)
+        return self.pca.transform(curr_data)
     
     def generate_features(self,start=0,end=None, sliding_window=False, train=True,expl_variance=85):
-        self._calc_features(time_sta=start, time_stp=end, sliding_window=sliding_window)
-        princ_components=self._setup_PCA(train=train,expl_variance=expl_variance)
+        curr_data=self._calc_features(time_sta=start, time_stp=end, sliding_window=sliding_window)
+        princ_components=self._setup_PCA(curr_data,train=train,expl_variance=expl_variance)
         return princ_components
         
         
@@ -214,7 +105,7 @@ class Feature_generator:
 # In[ ]:
 
 
-# pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False,wsize=300)
+# pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False,wsize=100)
 
 # for p in range(pecog.pca.n_components):
 #     plt.plot(wut[:,p])
@@ -264,7 +155,172 @@ class Feature_generator:
 # In[ ]:
 
 
-# wut=pecog.generate_features(0,30000)
+##### A WHOLE LOT OF PLOTTING FUNCTIONS
 
-# print(wut.shape)
+
+# wut=pecog.generate_features(0,12500,expl_variance=90)
+
+# # print(wut.shape)
+
+
+# pecog.vis_pc()
+
+# pecog.curr_data.shape
+
+
+# lel=pecog.curr_data.T
+# med=np.median(lel.reshape(-1,8,lel.shape[1]),axis=0)
+# men=np.mean(lel.reshape(-1,8,lel.shape[1]),axis=0)
+# print(lel.shape)
+# for i in range(8):
+#     plt.plot(lel[8*8+i,:], label='Bin %d' %i)
+# plt.legend()
+# plt.xlabel('Time Window')
+# plt.ylabel('PSD')
+# plt.title('Welch Transformation results')
+# plt.show()
+# for i in range(8):
+#     plt.plot(men[i,:], label='Bin %d' %i)
+# plt.legend()
+# plt.xlabel('Time Window')
+# #plt.yscale('log')
+# plt.ylabel('PSD')
+# plt.title('Welch Transformation, Mean over Channels - Standardized ')
+# plt.show()
+
+# for i in range(8):
+#     plt.plot(med[i,:], label='Bin %d' %i)
+# plt.legend()
+# plt.xlabel('Time Window')
+# #plt.yscale('log')
+# plt.ylabel('PSD')
+# plt.title('Welch Transformation, Median over Channels - Standardized')
+# plt.show()
+
+
+
+# lel=pecog.temp_mat.T
+# med=np.median(lel.reshape(-1,8,lel.shape[1]),axis=0)
+# men=np.mean(lel.reshape(-1,8,lel.shape[1]),axis=0)
+# print(lel.shape)
+# for i in range(8):
+#     plt.plot(lel[8*8+i,:], label='Bin %d' %i)
+# plt.legend()
+# plt.xlabel('Time Window')
+# plt.ylabel('PSD')
+# plt.title('Welch Transformation results')
+# plt.show()
+# for i in range(8):
+#     plt.plot(men[i,:], label='Bin %d' %i)
+# plt.legend()
+# plt.xlabel('Time Window')
+# #plt.yscale('log')
+# plt.ylabel('PSD')
+# plt.title('Welch Transformation, Mean over Channels ')
+# plt.show()
+
+# for i in range(8):
+#     plt.plot(med[i,:], label='Bin %d' %i)
+# plt.legend()
+# plt.xlabel('Time Window')
+# #plt.yscale('log')
+# plt.ylabel('PSD')
+# plt.title('Welch Transformation, Median over Channels')
+# plt.show()
+
+# f=h5py.File('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5')
+
+# sprr=f['dataset'][()]
+
+# for i in range(8,14):
+#     plt.plot(sprr[i,125*100*500:127*100*500])
+# plt.xlabel('t')
+# plt.ylabel('uV')
+# plt.show()
+# for i in range(10,12):
+#     plt.plot(pecog.data[i,125*100*500:127*100*500])
+# plt.xlabel('t')
+# plt.ylabel('uV')
+# plt.show()
+
+# for i in range(8,14):
+#     plt.plot(sprr[i,10*100*500:12*100*500])
+# plt.xlabel('t')
+# plt.ylabel('uV')
+# plt.title('One Patient, Sample Channels')
+
+# for i in range(25,28):
+#     plt.plot(pecog.data[i,35*100*500:40*100*500])
+# plt.xlabel('t')
+# plt.ylabel('uV')
+# plt.show()
+
+# for i in range(25,28):
+#     plt.plot(pecog.data[i,38*100*500:40*100*500])
+# plt.xlabel('t')
+# plt.ylabel('uV')
+# plt.show()
+
+# for i in range(25,28):
+#     plt.plot(pecog.data[i,38*100*500:50*100*500])
+# plt.xlabel('t')
+# plt.ylabel('uV')
+# plt.show()
+
+# np.argmax(lel.reshape(-1,8,lel.shape[1])[:,1,34])
+
+# pecog.generate_features()
+
+# ttest=np.abs(pecog.pca.transform(np.eye(pecog.curr_data.shape[1])))
+
+# ttest_sum[:16]
+
+# ttest.shape
+
+# #how much did each bin contribute?
+# ttest_sum=ttest.sum(axis=1)
+# ttest_sum=ttest[:,0]
+# ttest_shaped=ttest_sum.reshape(pecog.data.shape[0],-1)
+# cont_bins=ttest_shaped.sum(axis=0)
+# cont_elecs=ttest_shaped.sum(axis=1)
+# plt.figure(figsize=(7,3))
+# plt.bar(np.arange(len(cont_bins)),cont_bins)
+# ticks=['[0,1]','(1,2]','(2,4]','(4,8]','(8,16]','(16,32]','(32,64]','(64,150]']
+# plt.xticks(np.arange(len(cont_bins)),ticks)
+# plt.title('Contributions of Bins to PD 0')
+# plt.xlabel('Bins')
+# plt.ylabel('Absolute Contribution')
+# plt.show()
+
+# plt.figure(figsize=(3,15))
+# plt.barh(np.arange(len(cont_elecs)),cont_elecs)
+# plt.yticks(np.arange(len(cont_elecs)),list(pecog.chan_labels))
+# plt.ylabel('Region')
+# plt.xlabel('Absolute Contribution')
+# plt.title('Contributions of Chans to PD')
+
+# mni_file=pd.read_excel('/data2/users/stepeter/mni_coords/cb46fd46/cb46fd46_MNI_atlasRegions.xlsx')
+# for en,i in enumerate(pecog.chan_labels):
+#     print(en)
+#     if( sum(mni_file['Electrode'].isin([i]))==0):
+#         print(i)
+#         print(en)
+        
+
+# print(mni_file['Electrode'].loc[7])
+
+# pecog.chan_labels.shape
+
+# pc1=np.sum(np.abs(ttest[:,1].reshape(-1,8)),axis=1)
+# pc2=np.sum(np.abs(ttest[:,2].reshape(-1,8)),axis=1)
+# pc3=np.sum(np.abs(ttest[:,3].reshape(-1,8)),axis=1)
+# pc4=np.sum(np.abs(ttest[:,4].reshape(-1,8)),axis=1)
+
+# mni_coords_fullfile='/data2/users/stepeter/mni_coords/cb46fd46/cb46fd46_MNI_atlasRegions.xlsx'
+# plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,pecog.chan_labels,num_grid_chans=64, colors=cont_elecs[:-1])
+
+# plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,pecog.chan_labels,num_grid_chans=64, colors=pc1[:-1])
+# plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,pecog.chan_labels,num_grid_chans=64, colors=pc2[:-1])
+# plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,pecog.chan_labels,num_grid_chans=64, colors=pc3[:-1])
+# plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,pecog.chan_labels,num_grid_chans=64, colors=pc4[:-1])
 
