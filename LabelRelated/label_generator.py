@@ -7,7 +7,7 @@
 import numpy as np
 
 
-# In[9]:
+# In[ ]:
 
 
 class Label_generator:

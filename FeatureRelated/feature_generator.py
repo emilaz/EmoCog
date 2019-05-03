@@ -1,20 +1,18 @@
 
 # coding: utf-8
 
-# In[4]:
+# In[ ]:
 
 
 #%matplotlib inline
+import sys
+sys.path.append('..')
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from scipy import signal
 import warnings
-#this is needed when using pipeline. else, get rid of point.
-from .Util import *
-# import sys
-# sys.path.append('/home/stepeter/AJILE/stepeter_sandbox/ECoG_Preprocessing')
-# from BrainPlot import *
+from Util import FeatureUtils as util
 
 
 # In[ ]:
@@ -64,7 +62,7 @@ class Feature_generator:
                 
             #welch method 
             fr,psd=signal.welch(curr_data,self.sfreq,nperseg=250)
-            fr_bin,psd_bin=bin_psd(fr,psd)
+            fr_bin,psd_bin=util.bin_psd(fr,psd)
             if time_it==time_sta:
                 self.fr_bin=fr_bin
                 #first time. create first column, flatten w/o argument is row major 
@@ -80,7 +78,7 @@ class Feature_generator:
             if time_it+self.wsize >= time_stp+1:
                 break
 #        self.temp_mat=mat.T
-        data_scal=standardize(mat.T)
+        data_scal=util.standardize(mat.T)
         return data_scal
     
     
@@ -89,7 +87,7 @@ class Feature_generator:
             raise ValueError('Train set has to be generated first, otherwise no principal axis available for data trafo.')
         if train:
             print('Setting up PCA on current data range...')
-            no_comps=get_no_comps(curr_data,expl_variance)
+            no_comps=util.get_no_comps(curr_data,expl_variance)
             self.pca=PCA(n_components=no_comps)
             self.pca.fit(curr_data)
         return self.pca.transform(curr_data)
