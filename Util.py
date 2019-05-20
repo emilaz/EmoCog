@@ -1,46 +1,70 @@
 
 # coding: utf-8
 
-# In[5]:
+# In[ ]:
 
 
 import numpy as np
+import pandas as pd
 from sklearn.decomposition import PCA
-from Evals import get_f1, get_precision_recall
-from sklearn.metrics import roc_curve
+from Evals import get_f1, get_precision_recall, get_f1_from_pr
+from sklearn.metrics import roc_curve, precision_recall_curve, fbeta_score, roc_auc_score, average_precision_score
 
 
-# In[3]:
+# In[ ]:
 
 
 class ClassificationUtils:
-    def get_optimal_threshold(classifier,cv,x,y):
+    def get_optimal_threshold(classifier,cv,x,y, go_after_pr = False): #are we optimizing for f1? or tpr-fpr?
         optimal_threshs = []
         for train, test in cv.split(x, y):
             classifier.fit(x[train], y[train])
             probas_ = classifier.predict_proba(x[test])
             # Compute ROC curve
             #this returns different tpr/fpr for different decision thresholds
-            fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
-            optimal_idx = np.argmax(tpr - fpr)
+            if go_after_pr:
+                pre, rec, thresholds = precision_recall_curve(y[test],probas_[:,1])
+                f1 = get_f1_from_pr(pre,rec)
+                optimal_idx = np.argmax(f1)
+            else:
+                fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
+                optimal_idx = np.argmax(tpr - fpr)
             optimal_threshold = thresholds[optimal_idx]
             optimal_threshs.append(optimal_threshold)
 
         #now that we have this, what was the median best threshold?
         return np.median(optimal_threshs)
+    
+    def get_auc_score(classifier,cv,x,y, go_after_pr = False): #are we optimizing for f1? or tpr-fpr?
+        aucs = []
+        for train, test in cv.split(x, y):
+            classifier.fit(x[train], y[train])
+            probas_ = classifier.predict_proba(x[test])
+            # Compute ROC curve
+            #this returns different tpr/fpr for different decision thresholds
+            if go_after_pr:
+                aucs.append(average_precision_score(y[test],probas_[:,1]))
+            else:
+                aucs.append(roc_auc_score(y[test],probas_[:,1]))
+                
+        #now that we have this, what was the median best threshold?
+        return np.mean(aucs)
 
     def get_prediction(classifier,x,thresh):
         y_pred = (classifier.predict_proba(x)[:,1]>thresh).astype(bool)
         return y_pred
     
-    def fit_predict(classifier,x,y,x_ev,y_ev,thresh):
+    def fit_predict(classifier, thresh, x,y,x_ev=None,y_ev=None):
         classifier.fit(x, y) # fit the classifier
         y_pred = ClassificationUtils.get_prediction(classifier,x,thresh) # predict on whole train set
-        y_pred_ev = ClassificationUtils.get_prediction(classifier,x_ev,thresh) #same for ev set
+        if x_ev is None:
+            y_pred_ev = None
+        else:
+            y_pred_ev = ClassificationUtils.get_prediction(classifier,x_ev,thresh) #same for ev set
         return y_pred, y_pred_ev
     
     def get_best_hyperparas_results(df):
-        pos = df['F1 Score Ev'].idxmax()
+        pos = df['F1 Score Tr'].idxmax()
         best_row=df.loc[pos] # get the row with highest ev score
         return best_row       
     
@@ -54,7 +78,29 @@ class ClassificationUtils:
         results_df.loc[idx] = [c,g,thresh,f1_tr,prec_tr,recall_tr,f1_ev,prec_ev,recall_ev]
 
 
-# In[4]:
+# In[ ]:
+
+
+class DataUtils:
+    def get_data_from_file(wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000, cutoff=None):
+        link='./data/ws_'+str(wsize)+'_str_'+str(sliding)+'_tr'+'_s_'+str(s_sample)+'_e_'+str(e_sample)+'_ev_'+'s_'+str(s_sample_ev)+'_e_'+str(e_sample_ev)+'_cut_'+str(cutoff)+'.hdf'
+        df = pd.read_hdf(link)
+        x = df['x'][0]
+        y = df['y'][0]
+        x_ev = df['x_ev'][0]
+        y_ev = df['y_ev'][0]
+    
+        return x,y,x_ev,y_ev
+
+    def save_data_to_file(x,y,x_ev,y_ev,wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000,cutoff =None):
+        link='./data/ws_'+str(wsize)+'_str_'+str(sliding)+'_tr'+'_s_'+str(s_sample)+'_e_'+str(e_sample)+'_ev_'+'s_'+str(s_sample_ev)+'_e_'+str(e_sample_ev)+'_cut_'+str(cutoff)+'.hdf'
+        #save stuff to file:
+        df = pd.DataFrame(data=[[x,y,x_ev,y_ev]],columns=['x','y','x_ev','y_ev'])
+
+        df.to_hdf(link,key='df')
+
+
+# In[ ]:
 
 
 class FeatureUtils:

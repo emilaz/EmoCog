@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #%matplotlib inline
@@ -15,15 +15,13 @@ import warnings
 from Util import FeatureUtils as util
 
 
-# In[ ]:
+# In[2]:
 
 
 #create a ECOG PCA class for its PCA object, hyperparas and other stuff
 class Feature_generator:
 
-    def __init__(self,dataholder,wsize=30):
-        #hyperpara in s for how large the time window should be on whihc we calculate our fourier trafo
-        self.wsize = wsize
+    def __init__(self,dataholder):
         #sampling frequency and last sample taken
         self.sfreq = dataholder.sfreq
         self.data_bin, self.mask_bin = dataholder.get_bin_data_and_mask()
@@ -36,49 +34,50 @@ class Feature_generator:
     #resulting matrix is 2D, Time Stepsx(Freq*Channels)
     #note that this matrix is prone to constant change. Save the current data as member variable
     #NEW: Option to do this with a sliding window of length wsize
-    def _calc_features(self,time_sta,time_stp, sliding_window=False):
-        time_it=time_sta
+    def _calc_features(self,time_sta,time_stp, wsize = 100, sliding_window=False):
+        time_it = time_sta
+        mat = None
         while True:
-            stop=time_it+self.wsize
-            if stop>=self.data_bin.shape[1]-1:
+            stop = time_it + wsize
+            if stop >= self.data_bin.shape[1]-1:
                 print('Not enough data for set end %d. Returning all data that is available in given range.'% time_stp)
                 break
                 
             #Note that each column is exactly one second.
             #get data in range of ALL channels, applying the following mask to filter out seconds with a bad index
-            mask=np.ma.compressed(np.ma.masked_array(range(time_it,stop),mask=self.mask_bin[time_it:stop]))
-            curr_data=self.data_bin[:,mask,:].reshape(self.data_bin.shape[0],-1)
+            mask = np.ma.compressed(np.ma.masked_array(range(time_it,stop),mask=self.mask_bin[time_it:stop]))
+            curr_data = self.data_bin[:,mask,:].reshape(self.data_bin.shape[0],-1)
             
             #is this thing empty? continue
             if not curr_data.size:
-                print('Warning. A whole chunck of %d s of data was thrown away here. Check if this is correct' %wsize)
+                print('Warning. A whole chunck of %d s of data was thrown away here, starting at s %d. Check if this is correct' %(wsize,time_it))
                 if(sliding_window):
-                    time_it+=sliding_window
+                    time_it += sliding_window
                 else:
-                    time_it+=self.wsize
-                if time_it+self.wsize >= time_stp:
+                    time_it += wsize
+                if time_it + wsize >= time_stp:
                     break
                 continue
                 
             #welch method 
-            fr,psd=signal.welch(curr_data,self.sfreq,nperseg=250)
-            fr_bin,psd_bin=util.bin_psd(fr,psd)
-            if time_it==time_sta:
-                self.fr_bin=fr_bin
+            fr,psd = signal.welch(curr_data,self.sfreq,nperseg=250)
+            fr_bin,psd_bin = util.bin_psd(fr,psd)
+            if mat is None:
+                self.fr_bin = fr_bin
                 #first time. create first column, flatten w/o argument is row major 
-                mat=psd_bin.flatten()
+                mat = psd_bin.flatten()
             else:
                 #after, add column for each time step
-                mat=np.column_stack((mat,psd_bin.flatten()))
+                mat = np.column_stack((mat,psd_bin.flatten()))
             #sliding window?
             if (sliding_window):
-                time_it+=sliding_window
+                time_it += sliding_window
             else:
-                time_it+=self.wsize
-            if time_it+self.wsize >= time_stp+1:
+                time_it += wsize
+            if time_it + wsize >= time_stp+1:
                 break
 #        self.temp_mat=mat.T
-        data_scal=util.standardize(mat.T)
+        data_scal = util.standardize(mat.T)
         return data_scal
     
     

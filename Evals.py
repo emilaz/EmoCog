@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[6]:
+# In[1]:
 
 
 import seaborn as sn
@@ -39,6 +39,10 @@ def get_f1(pred,true):
     f1 = 2*precision*recall/max(1.,(precision+recall))
     return f1
 
+def get_f1_from_pr(precision,recall):
+    f1_arr = 2*precision*recall/np.maximum(np.ones(len(precision)),precision+recall)
+    return f1_arr
+
 def get_acc(pred,true):
     acc = sum(pred==true)/float(len(true))
     return acc
@@ -48,11 +52,4 @@ def get_all_metrics(pred,true):
     f1 = get_f1(pred,true)
     acc = get_acc(pred,true)
     return ('Accuracy',acc),('Precision',pr),('Recall',re),('F1',f1)
-
-def get_conf_mat(pred,true):
-    tp,fp,tn,fn = get_pos_and_negs(pred,true)
-    rates = np.array([tp,fp,fn,tn]).reshape((2,2))
-    df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
-    plt.figure(figsize = (10,7))
-    sn.heatmap(df_cm, annot=True,fmt='g')
 

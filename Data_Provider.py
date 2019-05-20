@@ -1,63 +1,79 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[17]:
 
 
-import pandas as pd
 from FeatureRelated.feature_generator import Feature_generator
 from LabelRelated.label_generator import Label_generator 
 from FeatureRelated.feature_data_holder import FeatDataHolder
 from LabelRelated.label_data_holder import LabelDataHolder
 import numpy as np
+from Vis import LabelVis, ClassificationVis
 
 
-# In[2]:
+# In[18]:
 
 
-#get datasets
-def get_data(wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000):
-    
-    feat_data = FeatDataHolder('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5')
-    label_data = LabelDataHolder('/home/emil/data/hdf_data/cb46fd46_8_imp_columns.hdf',feat_data.start,feat_data.end)
+class DataProvider:
+
+    def __init__(self, col = 'Happy_predicted', draw = False):
+        realtime_start = 29413 #this is 8h, 10min and 13s into day 4
+        video_start = realtime_start - 29344 # 29344 is the beginning of recordings of video data (see /home/emil/data/sync_data)
+        self.duration = 37820+4500 #in seconds, of course
+        self.feat_data = FeatDataHolder('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',start=realtime_start, duration=self.duration)
+        self.label_data = LabelDataHolder('/home/emil/data/hdf_data/cb46fd46_7_imp_columns.hdf',video_start,video_start+self.duration, col = col )
+#        self.label_data = LabelDataHolder('/home/emil/data/hdf_data/cb46fd46_7_imp_columns.hdf',video_start, col= col)
+        self.featuregen = Feature_generator(self.feat_data)
+        self.lablegen = Label_generator(self.label_data,mask=self.featuregen.mask_bin)
+        self.draw = draw
+
+    #get datasets
+    def get_data(self,wsize=100,sliding=10,s_sample=0,e_sample=None, train=True, expl_var=95, cutoff = None):
+        if e_sample == None:
+            e_sample = self.duration-1
+        #train data
+        x = self.featuregen.generate_features(start=s_sample,end=e_sample,expl_variance=expl_var,train=train,sliding_window=sliding)
+        y,rat = self.lablegen.generate_labels(start=s_sample,end=e_sample, sliding_window=sliding, cutoff=cutoff)
+        if self.draw:
+            LabelVis.plot_happy_ratio(y,rat)
+        x = x[~np.isnan(y)]
+        y = y[~np.isnan(y)]
+        return x,y
 
 
-    #edf_path, emo_path=get_paths(pat_name,sess)
-    featuregen = Feature_generator(feat_data,wsize=wsize)
-    lablegen = Label_generator(label_data,mask=featuregen.mask_bin,wsize=wsize)
+# In[15]:
 
-    x = featuregen.generate_features(start=s_sample,end=e_sample,expl_variance=95,train=True,sliding_window=sliding)
 
-    y,rat = lablegen.generate_labels(start=s_sample,end=e_sample, sliding_window=sliding, classification=True)
+# #this is to find cutoff
 
-    x_ev = featuregen.generate_features(start = s_sample_ev,end = e_sample_ev,train = False,sliding_window = sliding)
-    y_ev, y_ev_rat = lablegen.generate_labels(start = s_sample_ev,end = e_sample_ev,sliding_window = sliding,classification=True)
-    
-    x = x[~np.isnan(y)]
-    y = y[~np.isnan(y)]
-    x_ev = x_ev[~np.isnan(y_ev)]
-    y_ev = y_ev[~np.isnan(y_ev)]
+# bla = DataProvider(draw=True)
+# ma = DataProvider(draw=True, col ='annotated')
 
-    return x,y,x_ev,y_ev
+# y = bla.get_data(sliding=10)
+# my = ma.get_data(sliding=10)
 
-def get_data_from_file(wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000):
-    link='./data/ws_'+str(wsize)+'_str_'+str(sliding)+'_tr'+'_s_'+str(s_sample)+'_e_'+str(e_sample)+'_ev_'+'s_'+str(s_sample_ev)+'_e_'+str(e_sample_ev)+'.hdf'
-    df = pd.read_hdf(link)
-    x = df['x'][0]
-    y = df['y'][0]
-    x_ev = df['x_ev'][0]
-    y_ev = df['y_ev'][0]
-    
-    return x,y,x_ev,y_ev
+# thresh = .3
+# for thresh in [.2]:
+#     y_class = y.copy()
+#     my_class = my.copy()
+#     y_class_nans = np.isnan(y_class)
+#     my_class_nans = np.isnan(my_class)
+#     print(y_class_nans)
+#     y_class[y_class<thresh]=0
+#     y_class[y_class>0]=1
+#     y_class[y_class_nans]=np.nan
+#     my_class[my_class<thresh]=0
+#     my_class[my_class>0]=1
+#     my_class[my_class_nans]=np.nan
 
-def save_data_to_file(x,y,x_ev,y_ev,wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000):
-    link='./data/ws_'+str(wsize)+'_str_'+str(sliding)+'_tr'+'_s_'+str(s_sample)+'_e_'+str(e_sample)+'_ev_'+'s_'+str(s_sample_ev)+'_e_'+str(e_sample_ev)+'.hdf'
-#     link_ev='./data/ws'+str(wsize)+'sl'+str(sliding)+'s'+str(s_sample_ev)+'e'+str(e_sample_ev)+'_ev.hdf'
-    #save stuff to file:
-    df = pd.DataFrame(data=[[x,y,x_ev,y_ev]],columns=['x','y','x_ev','y_ev'])
-#     df_tr.to_hdf(link_tr,key='df')
-#     df_ev = pd.DataFrame(data=[[x_ev,y_ev]],columns=['x_ev','y_ev'])
-#     df_ev.to_hdf(link_ev,key='df')
-#     df_ev = pd.DataFrame(data=[[x_ev,y_ev]],columns=['x_ev','y_ev'])
-    df.to_hdf(link,key='df')
+#     LabelVis.plot_nan_ratio(my_class)
+#     LabelVis.plot_nan_ratio(y_class)
+
+#     ynonan =y_class[~my_class_nans]
+#     mynonan = my_class[~my_class_nans]
+#     mynonan = mynonan[~np.isnan(ynonan)]
+#     ynonan = ynonan[~np.isnan(ynonan)]
+
+#     ClassificationVis.conf_mat(mynonan,ynonan)
 

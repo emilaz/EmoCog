@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import numpy as np
@@ -11,10 +11,8 @@ import numpy as np
 
 
 class Label_generator:
-    def __init__(self,data,wsize=30,mask=None):
+    def __init__(self,data,mask=None):
         self.fps=data.fps
-        #account for slighlty faster framerate due to openface
-        self.wsize=wsize
         #self._convert_to_unix_time()
         self.pred_bin=data.get_pred_bin()
         self.mask=mask
@@ -25,7 +23,7 @@ class Label_generator:
 
     #generates labels. Use sliding window if features are also generated with sliding window
     #if a classification method is used, we need a cutoff somewhere :)
-    def generate_labels(self,start=0, end=None, sliding_window = 0,method='ratio', classification=False, cutoff=.07):
+    def generate_labels(self,start=0, end=None, wsize = 100, sliding_window = 0,method='ratio', cutoff=None):
         if method != 'ratio' and method != 'median':
             raise NameError('The given method does not exist. Try one of the following: ratio,median.')
         if method is 'median':
@@ -44,7 +42,7 @@ class Label_generator:
         good_ratio = []
         time_it = start
         while True:
-            stop = time_it+self.wsize
+            stop = time_it+wsize
             curr_mask = np.ma.compressed(np.ma.masked_array(range(time_it,stop),mask=self.mask[time_it:stop]))
             curr_data = happy_portion[curr_mask]           
             curr_non_nans = np.sum(non_nans_per_s[curr_mask])
@@ -53,8 +51,8 @@ class Label_generator:
                 if sliding_window:
                     time_it += sliding_window
                 else:
-                    time_it += self.wsize
-                if time_it + self.wsize > end:
+                    time_it += wsize
+                if time_it + wsize > end:
                     break
                 continue
             #here, we divide by len(curr_data), because we don't want the influence of nans that were thrown away due to bad feature points.
@@ -66,12 +64,12 @@ class Label_generator:
             if sliding_window:
                 time_it += sliding_window
             else:
-                time_it += self.wsize
-            if time_it + self.wsize > end:
+                time_it += wsize
+            if time_it + wsize > end:
                 break
         self.labels = np.array(self.labels)
 
-        if(classification):
+        if cutoff is not None:
             #self.labels[np.isnan(self.labels)]=-1
             self.labels[self.labels>cutoff] = 1
             self.labels[(self.labels<1) & (self.labels>-1)] = 0
@@ -120,61 +118,6 @@ class Label_generator:
 # plt.title("Occurences of 'Happy'/'Not Happy'/'N/A' predictions in %ds of data" % (stop-start))
 # plt.xlabel('Prediction')
 # plt.ylabel('Occurences')
-
-
-# In[ ]:
-
-
-# #plot stuff
-# plt.scatter(range(len(mea)),mea, c=mea_rat)
-# plt.plot(range(len(mea)),mea, 'y--')
-# plt.title('Mean Happiness, windowsize %ds' %test.wsize)
-# plt.ylabel('Value')
-# plt.xlabel('Data point no.')
-# cbar=plt.colorbar()
-# cbar.set_label('Ratio Pred:NaN')
-# plt.show()
-
-# plt.scatter(range(len(meds)),meds, c=meds_rat)
-# plt.plot(meds, 'y--')
-# cbar=plt.colorbar()
-# cbar.set_label('Ratio Pred:NaN')
-# plt.title('25th Percentile Happiness, windowsize %ds' %test.wsize)
-# plt.ylabel('Value')
-# plt.xlabel('Data point no.')
-# plt.show()
-
-# plt.scatter(range(len(meds_sl)),meds_sl, c=meds_sl_rat)
-# #plt.plot(meds_sl, 'b--')
-# plt.ylabel('Value')
-# plt.xlabel('Data point no.')
-# plt.title('25th Percentile Happiness, sliding window of %ds' %test.wsize)
-# cbar=plt.colorbar()
-# cbar.set_label('Ratio Pred:NaN')
-# plt.show()
-
-# plt.scatter(range(len(mea_sl)),mea_sl, c=mea_sl_rat)
-# #plt.plot(mea_sl, label='Mean')
-# plt.ylabel('Value')
-# plt.xlabel('Data point no.')
-# plt.title('Mean Happiness, sliding window of %ds' %test.wsize)
-# plt.legend()
-# cbar=plt.colorbar()
-# cbar.set_label('Ratio Pred:NaN')
-# plt.show()
-
-# plt.plot(mea_cl,'b.', label='Mean',)
-# plt.ylabel('Value')
-# plt.xlabel('Data point no.')
-# plt.title('Mean and classification method, windowsize of %ds, threshold of %2.2f' % (test.wsize,.16))
-# plt.legend()
-# plt.show()
-
-# plt.plot(meds_cl,'b.', label='Median',)
-# plt.ylabel('Value')
-# plt.xlabel('Data point no.')
-# plt.title('25th Percentile and classification method, windowsize of %ds, threshold of %2.2f' % (test.wsize,.16))
-# plt.show()
 
 
 # In[ ]:

@@ -1,10 +1,12 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[3]:
 
 
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+
 import seaborn as sns
 import supereeg as se
 import numpy as np
@@ -42,8 +44,7 @@ class ClassificationVis:
                 higher=np.argmax([rects[0].get_height(),rects[1].get_height()])
                 rect=rects[higher]
                 height = rect.get_height()
-                plt.text(rect.get_x() + rect.get_width()-(higher/2.), height, '%.2f' % thresholds[idx], ha='center', va='bottom')
-                
+                plt.text(rect.get_x() + rect.get_width()-(higher/2.), height, '%.2f' % thresholds[idx], ha='center', va='bottom')      
         plt.show()
 
     def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
@@ -110,25 +111,35 @@ class ClassificationVis:
 
 
 
-# In[ ]:
+# In[14]:
 
 
-# class LabelVis:
-#     # #plot the nan ratio
-#     def nan_ratio():
+class LabelVis: #most of these functions are not intended for the good-to-go labels, but rather raw(-ish) data on the label side
+    # #plot the nan ratio
+    def plot_nan_ratio(all_video_preds):  
+        br=np.unique(np.array(all_video_preds, dtype='float'), return_counts=True) #check these elements
+        sum_nans=np.sum(br[1][2:]) #has to be done separately, since nans are counted individually here
+        vals=([str(br[0][0]),str(br[0][1]),str(br[0][2])],[br[1][0],br[1][1],sum_nans])
+        print(vals[0],vals[1])
+        plt.bar(vals[0],vals[1])
+        plt.title("Occurences of 'Happy'/'Not Happy'/'N/A' predictions (total of %d samples)" % (len(all_video_preds)))
+        plt.xlabel('Prediction')
+        plt.ylabel('Occurences')
+        plt.show()
         
-# br=np.unique(np.array(test.pred_bin, dtype='float'), return_counts=True)
-# sum_nans=np.sum(br[1][2:])
-# #print(sum_nans)
-# vals=([str(br[0][0]),str(br[0][1]),str(br[0][2])],[br[1][0],br[1][1],sum_nans])
-# print(vals[0],vals[1])
-# plt.bar(vals[0],vals[1])
-# plt.title("Occurences of 'Happy'/'Not Happy'/'N/A' predictions in %ds of data" % (stop-start))
-# plt.xlabel('Prediction')
-# plt.ylabel('Occurences')
+    def plot_happy_ratio(regression_labels, regression_labels_nan_fraction='b'): #this plots the happy/non-happy per label. if available, also plots a heatmap of the nan-ratio per each
+        plt.figure(figsize=(15,5))
+        plt.scatter(range(len(regression_labels)),regression_labels, c=regression_labels_nan_fraction, s=2)
+        plt.title('Mean Happiness')
+        plt.ylabel('Value')
+        plt.xlabel('Data point no.')
+        if regression_labels_nan_fraction is not 'b':
+            cbar=plt.colorbar()
+            cbar.set_label('Ratio Pred:NaN')
+        plt.show()
 
 
-# In[2]:
+# In[5]:
 
 
 class BrainVis:
@@ -166,4 +177,80 @@ class BrainVis:
         ni_plt.plot_connectome(np.eye(locs.shape[0]), locs, output_file=None,
                                node_kwargs={'alpha': 0.5, 'edgecolors': None},
                                node_size=10, node_color=colors)
+
+
+# In[11]:
+
+
+class FeatureVis:
+    
+    def plot_raw_data(data,chans=None,bad_coords= []):
+        if chans is None:
+            chans = range(data.shape[0])
+        fig, ax = plt.subplots(figsize=(10,10))
+        plt.subplots_adjust(bottom=0.25)
+        for ch in chans:
+            plt.plot(data[ch])
+        plt.axis([0, 100000, -1000, 1000])
+        for c in bad_coords:
+            ax.axvspan(c[0],c[1],color='red',alpha=.5)
+        axcolor = 'lightgoldenrodyellow'
+        axpos = plt.axes([0.2, 0.1, 0.65, 0.03], facecolor=axcolor)
+        spos = Slider(axpos, 'Pos', 0.1, len(data[0]))
+        def update(val): #needed for slider function of plot_raw_data
+            pos = spos.val
+            ax.axis([pos,pos+50000,-500,500])
+            fig.canvas.draw_idle()
+        spos.on_changed(update)
+        plt.show();
+        
+    def plot_features(data):
+        plts = data.shape[0]//20 +1 #we want 20 per plot
+        xsize=10
+        ysize=5
+        fig=plt.figure()
+        for k in range (0,plts):
+            ax=fig.add_subplot(xsize,ysize,k+1)
+            l = ax.plot(data[k*20:(k+1)*20])
+            plt.axis([0, 1000, 0, 10])
+            sframe = Slider(fig.add_subplot(50,1,50), 's', 0, len(data[0])-1, valinit=0)
+            def update(val):
+                frame = np.around(sframe.val)
+                #l.set_data(readlist[k][frame,:,:])
+                ax.axis([pos,pos+1000,0,10])
+        sframe.on_changed(update)
+        plt.show()
+        
+        
+    def plot_pc(pca,data):
+        for p in range(pca.n_components):
+            plt.plot(pca.transform(data)[:,p])
+        plt.xlabel('Time (in w_size)')
+        plt.ylabel('PC Value')
+        plt.title('First %d principal components' % pca.n_components)
+        plt.show()
+
+    #get elbow curve. This also outputs the optimal n_components for the given desired explained variancce.
+    def __elbow_curve(datapart,expl_var_lim):
+        components = range(1, datapart.shape[1] + 1)
+        explained_variance = []
+        #till where?
+        lim=min(100, datapart.shape[1])
+        count=0
+        for component in tqdm(components[:lim]):
+            pca = PCA(n_components=component)
+            pca.fit(datapart)
+            expl_var=sum(pca.explained_variance_ratio_)
+            explained_variance.append(expl_var)
+            count+=1
+            if(expl_var>(expl_var_lim/100.)):
+                optimal_no_comps=count
+                break
+        if(explained_variance[-1:][0]<(expl_var_lim/100.)):
+            print('Could not explain more than %d %% of the variance. n_comps is set to match this. Consider increasing data range or lowering demanded explained variance' % expl_var*100)
+            optimal_no_comps=components[-1:]
+        sns_plot = sns.regplot(
+            x=np.array(components[:count]), y=explained_variance,
+            fit_reg=False).get_figure()
+        return optimal_no_comps
 

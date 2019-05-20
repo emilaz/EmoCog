@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import numpy as np
@@ -48,7 +48,7 @@ class Preprocessor:
     def __flat_sig(self):
         #entries with high altitude? 
         self.bad_idx[np.array(self.data['allChanArtifactInds'][()][:],dtype=int)]=True
-        self.bad_idx=self.bad_idx[self.start:self.end]
+        self.bad_idx=self.bad_idx[self.start:self.end] # these indices correspond to times starting from the beginning of recording. They need to be shifted so they match the 'new' beginning (start_sample)
 #this function 
     def preprocess(self,prefiltered_sd_kurt=True,by_artifact=True):
         self.__flat_sig()
