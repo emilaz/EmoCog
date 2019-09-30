@@ -26,6 +26,8 @@ class Feature_generator:
         self.sfreq = dataholder.sfreq
         self.data_bin, self.mask_bin = dataholder.get_bin_data_and_mask()
         self.pca = None
+        self.std = None #these parameters are used for standardization.
+        self.mean = None # Use same parameter and apply to eval/test data.
 
 
     #create matrix as follows:
@@ -34,7 +36,7 @@ class Feature_generator:
     #resulting matrix is 2D, Time Stepsx(Freq*Channels)
     #note that this matrix is prone to constant change. Save the current data as member variable
     #NEW: Option to do this with a sliding window of length wsize
-    def _calc_features(self,time_sta,time_stp, wsize = 100, sliding_window=False):
+    def _calc_features(self,time_sta,time_stp, train, wsize = 100, sliding_window=False):
         time_it = time_sta
         mat = None
         while True:
@@ -76,8 +78,12 @@ class Feature_generator:
                 time_it += wsize
             if time_it + wsize >= time_stp+1:
                 break
-#        self.temp_mat=mat.T
-        data_scal = util.standardize(mat.T)
+        
+        if train: #if it's train data, then get its mean and std for standardization
+            self.std = np.std(mat.T,axis=0)
+            self.mean = np.mean(mat.T,axis=0)
+
+        data_scal = util.standardize(mat.T,self.std,self.mean)    
         return data_scal
     
     
@@ -91,8 +97,8 @@ class Feature_generator:
             self.pca.fit(curr_data)
         return self.pca.transform(curr_data)
     
-    def generate_features(self,start=0,end=None, sliding_window=False, train=True,expl_variance=85):
-        curr_data=self._calc_features(time_sta=start, time_stp=end, sliding_window=sliding_window)
+    def generate_features(self,start=0,end=None, wsize=100, sliding_window=False, train=True,expl_variance=85):
+        curr_data=self._calc_features(time_sta=start, wsize=wsize, time_stp=end, train=train, sliding_window=sliding_window)
         princ_components=self._setup_PCA(curr_data,train=train,expl_variance=expl_variance)
         return princ_components
         

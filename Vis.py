@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[3]:
+# In[2]:
 
 
 import matplotlib.pyplot as plt
@@ -15,8 +15,11 @@ from nilearn import plotting as ni_plt
 import pdb
 from Evals import *
 
+####DEBUG
+#from Util import ClassificationUtils as util
+####
 from scipy import interp
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
 from sklearn.model_selection import StratifiedKFold
 
 
@@ -62,18 +65,18 @@ class ClassificationVis:
         rates = np.array([tp,fp,fn,tn]).reshape((2,2))
         df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
         plt.figure(figsize = (10,7))
-        sn.heatmap(df_cm, annot=True,fmt='g')
+        sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 20})
         plt.show()
         
 
-    def plot_roc(x,y,classifier,  title):
-        cv = StratifiedKFold(n_splits=5,random_state=0)
+    def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!!
+        cv = StratifiedKFold(n_splits=10, shuffle=True)
         tprs = []
         aucs = []
         fpr_interval = np.linspace(0, 1, 100)
         i = 0
         for train, test in cv.split(x, y):
-            probas_ = classifier.fit(x[train], y[train]).predict_proba(x[test])
+            probas_ = classifier.predict_proba(x[test])
             # Compute ROC curve and area the curve
             #this returns different tpr/fpr for different decision thresholds
             fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
@@ -84,6 +87,7 @@ class ClassificationVis:
             aucs.append(roc_auc)
             i += 1
 
+            
         plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
                   label='Chance', alpha=.8)
 
@@ -105,16 +109,39 @@ class ClassificationVis:
         plt.ylim([-0.05, 1.05])
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
-        plt.title(title)# w/ RBF kernel, d=%2d' %gamma)
+        plt.title(title)
         plt.legend(loc="lower right")
         plt.show()
+        
+        
+    def plot_pr_curve(x, y, classifier, title):
+        y_probs = classifier.predict_proba(x)
+        avg_p  = average_precision_score(y,y_probs[:,1]) #get the average precision score
+        precision, recall, _ = precision_recall_curve(y, y_probs[:,1])
+        #step_kwargs = ({'step': 'post'}
+        #       if 'step' in signature(plt.fill_between).parameters
+        #       else {})
+        step_kwargs = ({'step': 'post'})
+        plt.step(recall, precision, color='b', alpha=0.2,
+                 where='post')
+        plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.ylim([0.0, 1.05])
+        plt.xlim([0.0, 1.0])
+        plt.title(title + ', AP={0:0.2f}'.format(
+                  avg_p))
+        plt.show()
+        
+        
 
 
-
-# In[14]:
+# In[53]:
 
 
 class LabelVis: #most of these functions are not intended for the good-to-go labels, but rather raw(-ish) data on the label side
+    
     # #plot the nan ratio
     def plot_nan_ratio(all_video_preds):  
         br=np.unique(np.array(all_video_preds, dtype='float'), return_counts=True) #check these elements
@@ -127,6 +154,7 @@ class LabelVis: #most of these functions are not intended for the good-to-go lab
         plt.ylabel('Occurences')
         plt.show()
         
+    
     def plot_happy_ratio(regression_labels, regression_labels_nan_fraction='b'): #this plots the happy/non-happy per label. if available, also plots a heatmap of the nan-ratio per each
         plt.figure(figsize=(15,5))
         plt.scatter(range(len(regression_labels)),regression_labels, c=regression_labels_nan_fraction, s=2)
@@ -136,6 +164,20 @@ class LabelVis: #most of these functions are not intended for the good-to-go lab
         if regression_labels_nan_fraction is not 'b':
             cbar=plt.colorbar()
             cbar.set_label('Ratio Pred:NaN')
+        plt.show()
+        
+    def plot_happy_bars(y,y_ev):
+        entries, counts = np.unique(y, return_counts = True)
+        entries, counts_ev = np.unique(y_ev, return_counts = True)
+        happies = [counts[1],counts_ev[1]]
+        nohappies  = [counts[0],counts_ev[0]]
+        bar_width = 0.35
+        plt.xticks(np.arange(0,2)+bar_width/2,['Train','Test'])
+        plt.bar(np.arange(2), happies, bar_width, label='Happy',color='blue')
+        plt.bar(np.arange(2)+bar_width, nohappies,bar_width, label='Not Happy',color='red')
+        plt.legend()
+        plt.ylabel('Counts')
+        plt.title('Number of Not Happy/Happy labels')
         plt.show()
 
 

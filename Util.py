@@ -15,26 +15,44 @@ from sklearn.metrics import roc_curve, precision_recall_curve, fbeta_score, roc_
 
 
 class ClassificationUtils:
-    def get_optimal_threshold(classifier,cv,x,y, go_after_pr = False): #are we optimizing for f1? or tpr-fpr?
-        optimal_threshs = []
-        for train, test in cv.split(x, y):
-            classifier.fit(x[train], y[train])
-            probas_ = classifier.predict_proba(x[test])
-            # Compute ROC curve
-            #this returns different tpr/fpr for different decision thresholds
-            if go_after_pr:
-                pre, rec, thresholds = precision_recall_curve(y[test],probas_[:,1])
-                f1 = get_f1_from_pr(pre,rec)
-                optimal_idx = np.argmax(f1)
-            else:
-                fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
-                optimal_idx = np.argmax(tpr - fpr)
-            optimal_threshold = thresholds[optimal_idx]
-            optimal_threshs.append(optimal_threshold)
-
-        #now that we have this, what was the median best threshold?
-        return np.median(optimal_threshs)
     
+#     def get_optimal_threshold(classifier,cv,x,y, go_after_pr = False): #are we optimizing for f1? or tpr-fpr?
+#         optimal_threshs = []
+#         for train, test in cv.split(x, y):
+#             classifier.fit(x[train], y[train])
+#             probas_ = classifier.predict_proba(x[test])
+#             # Compute ROC curve
+#             #this returns different tpr/fpr for different decision thresholds
+#             if go_after_pr:
+#                 pre, rec, thresholds = precision_recall_curve(y[test],probas_[:,1])
+#                 f1 = get_f1_from_pr(pre,rec)
+#                 optimal_idx = np.argmax(f1)
+#             else:
+#                 fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
+#                 optimal_idx = np.argmax(tpr - fpr)
+#             optimal_threshold = thresholds[optimal_idx]
+#             optimal_threshs.append(optimal_threshold)
+
+#         #now that we have this, what was the median best threshold?
+#         return np.median(optimal_threshs)
+
+
+    def get_optimal_threshold(classifier,cv,x,y, go_after_pr = False): #are we optimizing for f1? or tpr-fpr?
+        classifier.fit(x,y)
+        probas_ = classifier.predict_proba(x)
+        # Compute ROC curve
+        #this returns different tpr/fpr for different decision thresholds
+        if go_after_pr:
+            pre, rec, thresholds = precision_recall_curve(y,probas_[:,1])
+            f1 = get_f1_from_pr(pre,rec)
+            optimal_idx = np.argmax(f1)
+        else:
+            fpr, tpr, thresholds = roc_curve(y, probas_[:, 1])
+            optimal_idx = np.argmax(tpr - fpr)
+            
+        return thresholds[optimal_idx]
+
+            
     def get_auc_score(classifier,cv,x,y, go_after_pr = False): #are we optimizing for f1? or tpr-fpr?
         aucs = []
         for train, test in cv.split(x, y):
@@ -50,23 +68,21 @@ class ClassificationUtils:
         #now that we have this, what was the median best threshold?
         return np.mean(aucs)
 
+    
     def get_prediction(classifier,x,thresh):
-        y_pred = (classifier.predict_proba(x)[:,1]>thresh).astype(bool)
+        y_pred = (classifier.predict_proba(x)[:,1]>=thresh).astype(bool)
         return y_pred
     
+    
     def fit_predict(classifier, thresh, x,y,x_ev=None,y_ev=None):
-        classifier.fit(x, y) # fit the classifier
+        classifier.fit(x,y)
         y_pred = ClassificationUtils.get_prediction(classifier,x,thresh) # predict on whole train set
         if x_ev is None:
-            y_pred_ev = None
+            return y_pred
         else:
             y_pred_ev = ClassificationUtils.get_prediction(classifier,x_ev,thresh) #same for ev set
-        return y_pred, y_pred_ev
+            return y_pred, y_pred_ev
     
-    def get_best_hyperparas_results(df):
-        pos = df['F1 Score Tr'].idxmax()
-        best_row=df.loc[pos] # get the row with highest ev score
-        return best_row       
     
     def fit_predict_eval_fill(df,idx,classifier,cv,x,y,x_ev,y_ev):
         thresh = ClassificationUtils.get_optimal_threshold(classifier, cv, x, y) # get threshold using cv
@@ -76,38 +92,74 @@ class ClassificationUtils:
         prec_tr,recall_tr = get_precision_recall(y_pred,y)
         prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
         results_df.loc[idx] = [c,g,thresh,f1_tr,prec_tr,recall_tr,f1_ev,prec_ev,recall_ev]
+        
+    
+    def get_best_hyperparas_results(df, col):
+        pos = df[col].idxmax()
+        best_row=df.loc[pos] # get the row with highest ev score
+        return best_row       
 
 
 # In[ ]:
 
 
 class DataUtils:
-    def get_data_from_file(wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000, cutoff=None):
-        link='./data/ws_'+str(wsize)+'_str_'+str(sliding)+'_tr'+'_s_'+str(s_sample)+'_e_'+str(e_sample)+'_ev_'+'s_'+str(s_sample_ev)+'_e_'+str(e_sample_ev)+'_cut_'+str(cutoff)+'.hdf'
+
+    def load_configs():
+        configs = dict()
+        configs['sliding'] = 10
+        configs['wsize'] = 100
+        configs['s_sample']= 0
+        configs['e_sample']= 30000
+        configs['s_sample_ev'] = 30000
+        configs['e_sample_ev'] = 35000
+        configs['cutoff'] = .2
+        return configs
+    
+    def generate_filename(configs):
+        fname = 'ws_'+str(configs['wsize'])+'_str_'+str(configs['sliding'])+'_tr'+'_s_'+str(configs['s_sample'])+'_e_'+str(configs['e_sample'])+'_ev_'+'s_'+str(configs['s_sample_ev'])+'_e_'+str(configs['e_sample_ev'])+'_cut_'+str(configs['cutoff'])
+        return fname
+    
+    def get_data_from_file(configs):
+        fname = DataUtils.generate_filename(configs)
+        link = '/home/emil/OpenMindv2/data/'+fname+'.hdf'
         df = pd.read_hdf(link)
         x = df['x'][0]
         y = df['y'][0]
         x_ev = df['x_ev'][0]
         y_ev = df['y_ev'][0]
-    
         return x,y,x_ev,y_ev
 
-    def save_data_to_file(x,y,x_ev,y_ev,wsize=100,sliding=10,s_sample=0,e_sample=12500, s_sample_ev=9000, e_sample_ev=12000,cutoff =None):
-        link='./data/ws_'+str(wsize)+'_str_'+str(sliding)+'_tr'+'_s_'+str(s_sample)+'_e_'+str(e_sample)+'_ev_'+'s_'+str(s_sample_ev)+'_e_'+str(e_sample_ev)+'_cut_'+str(cutoff)+'.hdf'
+    def save_data_to_file(x,y,x_ev,y_ev,configs):
+        fname = DataUtils.generate_filename(configs)
+        link = '/home/emil/OpenMindv2/data/'+fname+'.hdf'
         #save stuff to file:
         df = pd.DataFrame(data=[[x,y,x_ev,y_ev]],columns=['x','y','x_ev','y_ev'])
 
         df.to_hdf(link,key='df')
+        
+    def save_results(df, configs,methodtype):
+        fname = DataUtils.generate_filename(configs)
+        link = '/home/emil/OpenMindv2/data/results/'+fname+methodtype
+        df.to_hdf(link,key='df')
+        
+    def get_results(configs,methodtype):
+        fname = DataUtils.generate_filename(configs)
+        link = '/home/emil/OpenMindv2/data/results/'+fname+methodtype
+        df = pd.read_hdf(link)
+        return df
+        
 
 
 # In[ ]:
 
 
 class FeatureUtils:
-    def standardize(data,ax=0):
-        data_mean = np.mean(data,axis=ax)
+    
+    def standardize(data,std,data_mean):
+        #data_mean = np.mean(data,axis=ax)
         data_dem = data-data_mean
-        std = np.std(data,axis=ax)
+        #std = np.std(data,axis=ax)
         data_stand = data_dem/std
         return data_stand
 
