@@ -1,7 +1,7 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[15]:
 
 
 #%matplotlib inline
@@ -18,52 +18,66 @@ from Util import FeatureUtils as util
 # In[2]:
 
 
-#create a ECOG PCA class for its PCA object, hyperparas and other stuff
+"""
+Class to generate features. Uses preprocessed data held in memory by FeatDataHolder class.
+"""
 class Feature_generator:
-
-    def __init__(self,dataholder):
+    
+    """
+    Init function.
+    """
+    def __init__(self,df):
         #sampling frequency and last sample taken
-        self.sfreq = dataholder.sfreq
-        self.data_bin, self.mask_bin = dataholder.get_bin_data_and_mask()
+        self.sfreq = 500 #will always be, hopefully lol
+        self.df = util.filter_common_channels(df)
         self.pca = None
         self.std = None #these parameters are used for standardization.
         self.mean = None # Use same parameter and apply to eval/test data.
+        self.std_lim = None #used for artifact detection, also on eval set.
+        self.std_med = None
+        self.bad_indices = dict() #this needs to be passed on to the label side. Will include bad indices found during calculation and artifacts found later
 
-
-    #create matrix as follows:
-    #columns: channels, for each channel the 200 frequencies (0-200Hz) (hece freq*cha length) BUT BINNED logarithmically
-    #rows: Time steps
-    #resulting matrix is 2D, Time Stepsx(Freq*Channels)
-    #note that this matrix is prone to constant change. Save the current data as member variable
-    #NEW: Option to do this with a sliding window of length wsize
-    def _calc_features(self,time_sta,time_stp, train, wsize = 100, sliding_window=False):
+    """
+    Function needed for calculating the features. Central piece on the feature side. Works as follows:
+    columns: channels, for each channel the 150 frequencies (0-150Hz) (hece freq*cha length), binned logarithmically
+    Rows: Time steps, defined by sliding window+window size
+    resulting matrix is 2D, Time Stepsx(Freq*Channels)
+    In case of generating train data, this function also saves mean and stddev for standardization purpose.
+    Input: Start and end time (in secs), bool for whether train data or not (for PCA), window size and sliding window in sec
+    Output: Standardized, binned data.
+    """
+    def _calc_features(self,data, time_sta,time_stp, wsize = 100, sliding_window=False):
+        bads = []
         time_it = time_sta
         mat = None
+        idx = 0
+        print('from {} to {}'.format(time_sta,time_stp))
         while True:
             stop = time_it + wsize
-            if stop >= self.data_bin.shape[1]-1:
-                print('Not enough data for set end %d. Returning all data that is available in given range.'% time_stp)
+            if stop >= data.shape[1]-1:
+                print('we went here, why? shape is', data.shape[1]-1)
                 break
-                
             #Note that each column is exactly one second.
-            #get data in range of ALL channels, applying the following mask to filter out seconds with a bad index
-            mask = np.ma.compressed(np.ma.masked_array(range(time_it,stop),mask=self.mask_bin[time_it:stop]))
-            curr_data = self.data_bin[:,mask,:].reshape(self.data_bin.shape[0],-1)
+            #get data in range of ALL channels
+            curr_data = data[:,time_it:stop,:].reshape(data.shape[0],-1)
             
-            #is this thing empty? continue
-            if not curr_data.size:
-                print('Warning. A whole chunck of %d s of data was thrown away here, starting at s %d. Check if this is correct' %(wsize,time_it))
-                if(sliding_window):
+            #welch method 
+            fr,psd = signal.welch(curr_data,self.sfreq,nperseg=250)
+            
+            #if there are nans in the psd, something's off. throw away, save index, continue
+            if np.isnan(psd).any():
+                bads +=[idx] #current index baad
+                if (sliding_window):
                     time_it += sliding_window
                 else:
                     time_it += wsize
-                if time_it + wsize >= time_stp:
+                if time_it + wsize >= time_stp+1:
                     break
+                idx+=1
                 continue
-                
-            #welch method 
-            fr,psd = signal.welch(curr_data,self.sfreq,nperseg=250)
+                  
             fr_bin,psd_bin = util.bin_psd(fr,psd)
+            idx+=1
             if mat is None:
                 self.fr_bin = fr_bin
                 #first time. create first column, flatten w/o argument is row major 
@@ -78,15 +92,59 @@ class Feature_generator:
                 time_it += wsize
             if time_it + wsize >= time_stp+1:
                 break
-        
-        if train: #if it's train data, then get its mean and std for standardization
-            self.std = np.std(mat.T,axis=0)
-            self.mean = np.mean(mat.T,axis=0)
+        return mat, bads #we do the standardization after the filtering
+    
+    
+    def _calc_features_over_days(self,time_sta,time_stp, wsize = 100, sliding_window=False):
+        #here, check how many days we need for the requested datasize
+        duration = time_stp - time_sta
+        time_passed = 0
+        curr_data = None
+        idx = 0
+        while duration>time_passed+wsize: #if not a single additional window would fit, break
+            print('jo schau')
+            try:
+                day = self.df['Day'].loc[idx]
+                print('Day No {}'.format(day))
+            except KeyError:
+                print("Not enough data loaded into memory for this request.")
+                return curr_data
+            print('time start is {}, and the end of the first day is{}'.format(time_sta, self.df['End'].loc[idx]))
+            if time_sta >= self.df['End'].loc[idx]-self.df['Start'].loc[idx]: #if startsample is after duration of data of first day, go to next day, change stuff
+                passed_not_used = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
+                time_sta -= passed_not_used #how much do we have to reduce time_sta?
+                time_stp -= passed_not_used
+                print('jo soviel vergangen{}, so sind die nun {},{}'.format(passed_not_used,time_sta,time_stp))
+                continue
+            data = self.df['BinnedData'].loc[idx]
+            mat, bad = self._calc_features(data,time_sta,time_sta+duration-time_passed, wsize, sliding_window)
+            if idx == 0:
+                self.bad_indices['NaNs'] = np.array(bad)
+                curr_data = mat
+                print('jo hier war ich jetzt drin.')
+            else:
+                self.bad_indices['NaNs'] = np.append(self.bad_indices['NaNs'],np.array(bad)+len(self.bad_indices['NaNs'])+curr_data.shape[1])
+                print(self.bad_indices['NaNs'], 'this is how the nan indices look after adding some on the next day')
+                curr_data = np.append(curr_data,mat,axis=1)
+            idx +=1
+            print('jo das ist die laenge', len(self.bad_indices['NaNs']), 'das die andere', curr_data.shape )
+            #calculate how many secs have passed
+            if sliding_window:
+                time_passed = wsize+sliding_window*(curr_data.shape[1] + len(self.bad_indices['NaNs'])-1)
+            else:
+                time_passed = wsize*(curr_data.shape[1]+ len(self.bad_indices['NaNs']))
+            print(time_passed, 'jo stimmt das hier mit der time passed?')
+            time_sta = 0 #for the next day, in case the initial starting time wasn't zero
+        return curr_data
+            
+            
 
-        data_scal = util.standardize(mat.T,self.std,self.mean)    
-        return data_scal
-    
-    
+        
+    """
+    Sets up PCA parameters in case of training, otherwise just transforms
+    Input: Data, train bool, amount of variance one wants to be explained (automatically calculates no. of PD needed)
+    Output: Data in PC space.
+    """
     def _setup_PCA(self,curr_data,train,expl_variance):
         if not train and self.pca is None:
             raise ValueError('Train set has to be generated first, otherwise no principal axis available for data trafo.')
@@ -97,10 +155,35 @@ class Feature_generator:
             self.pca.fit(curr_data)
         return self.pca.transform(curr_data)
     
+    
+    """
+    Function that actually generates the features.
+    Input: Start and end time (in secs), windowsize, sliding window (in s), train bool, variance to be explained by PCA.
+    Output: Features
+    """
     def generate_features(self,start=0,end=None, wsize=100, sliding_window=False, train=True,expl_variance=85):
-        curr_data=self._calc_features(time_sta=start, wsize=wsize, time_stp=end, train=train, sliding_window=sliding_window)
-        princ_components=self._setup_PCA(curr_data,train=train,expl_variance=expl_variance)
+        curr_data = self._calc_features_over_days(start,end,wsize,sliding_window)
+        #from here on, days don't matter anymore. We have a chunk of data, which is nice
+        if train:
+            self.bad_indices['Artifacts'], self.std_lim, self.std_med = util.detect_artifacts(curr_data) #JO HIER TRAIN MITGEEBEN
+        else:
+            self.bad_indices['Artifacts'], _,_ = util.detect_artifacts(curr_data, self.std_lim,self.std_med) #JO HIER TRAIN MITGEEBEN        
+        good_data = util.remove_artifacts(curr_data, self.bad_indices['Artifacts'])
+        if train: #if it's train data, then get its mean and std for standardization
+            self.std = np.std(good_data,axis=1)
+            self.mean = np.mean(good_data,axis=1)
+        data_scal = util.standardize(good_data,self.std,self.mean)
+        princ_components=self._setup_PCA(data_scal.T,train=train,expl_variance=expl_variance)
         return princ_components
+    
+    """
+    Function to return the bad indices found by filtering. Important: First filter out the nan indices, then the artifacts!
+    Order is important
+    Output: Dictionary of bad data points.
+    """
+    
+    def get_bad_indices(self):
+        return self.bad_indices
         
         
 
@@ -109,7 +192,7 @@ class Feature_generator:
 
 
 # pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False,wsize=100)
-
+# mecog = Feature_generator('/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_4.h5', prefiltered =False, wsize =100)
 # for p in range(pecog.pca.n_components):
 #     plt.plot(wut[:,p])
 # plt.xlabel('Time (in w_size)')

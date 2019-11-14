@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[1]:
@@ -10,42 +10,49 @@ import numpy as np
 # In[ ]:
 
 
+"""
+This class is used to generate usable labels from the data preprocessed by the LabelDataHolder class. 
+Class was initially created to avoid reloading data into memory every time functions were altered/debugged.
+"""
+
 class Label_generator:
-    def __init__(self,data,mask=None):
-        self.fps=data.fps
-        #self._convert_to_unix_time()
-        self.pred_bin=data.get_pred_bin()
-        self.mask=mask
-        if self.mask is None:
-            print('Warning. No filtering mask for bad data points was given. Assuming perfectly clean dataset.')
-            self.mask=np.zeros(self.pred_bin.shape[0],dtype='bool')
+    
+    """
+    Init function.
+    Input: DF with label data of (possibly) several days
+    """
+    def __init__(self,df):
+        self.fps=30
+        self.df=df
 
 
-    #generates labels. Use sliding window if features are also generated with sliding window
-    #if a classification method is used, we need a cutoff somewhere :)
-    def generate_labels(self,start=0, end=None, wsize = 100, sliding_window = 0,method='ratio', cutoff=None):
+
+    """
+    Generates labels. Use sliding window if features are also generated with sliding window. 
+    Note that we specified a time frame in the LabelDataHolder class. Within that frame, we can specify start and end point for the labels generated.
+    Useful for splitting into train/test data.
+    Input: Start point, End Point (in seconds), Windowsize for subsuming, method for subsuming labels in given window (ratio or median), Cutoff if we need boolean labels).
+    Output: Usable labels for regression/classification task. If classification is used, also returns the percentage of non-nan labels per label generated.
+    """
+    def _generate_labels_single_day(self,data, start=0, end=None, wsize = 100, sliding_window = 0,method='ratio'):
         if method != 'ratio' and method != 'median':
             raise NameError('The given method does not exist. Try one of the following: ratio,median.')
         if method is 'median':
             print('Note: The median method is currently a 75 percentile.')
-        if end is None:
-            end = self.pred_bin.shape[0]-1
-        if end >= self.pred_bin.shape[0]:
-            end = self.pred_bin.shape[0]-1
-            print('Desired window too long. Setting end to %ds'% end)
+        if end is None or end >= data.shape[0]:
+            end = data.shape[0]-1
         #average "happiness" per second
-        happy_portion = np.nanmean(np.array(self.pred_bin, dtype = 'float'),axis = 1)
+        happy_portion = np.nanmean(np.array(data, dtype = 'float'),axis = 1)
         #check nans along the 31FPS
-        non_nans_per_s = np.count_nonzero(~np.isnan(np.array(self.pred_bin, dtype='float')),axis = 1)
+        non_nans_per_s = np.count_nonzero(~np.isnan(np.array(data, dtype='float')),axis = 1)
         #if(sliding_window):
         self.labels = []
         good_ratio = []
         time_it = start
         while True:
             stop = time_it+wsize
-            curr_mask = np.ma.compressed(np.ma.masked_array(range(time_it,stop),mask=self.mask[time_it:stop]))
-            curr_data = happy_portion[curr_mask]           
-            curr_non_nans = np.sum(non_nans_per_s[curr_mask])
+            curr_data = happy_portion[time_it:stop]           
+            curr_non_nans = np.sum(non_nans_per_s[time_it:stop])
             if not curr_data.size:
                 print('Whole chunk of NaNs. Check this again.')
                 if sliding_window:
@@ -68,12 +75,47 @@ class Label_generator:
             if time_it + wsize > end:
                 break
         self.labels = np.array(self.labels)
-
-        if cutoff is not None:
-            #self.labels[np.isnan(self.labels)]=-1
-            self.labels[self.labels>cutoff] = 1
-            self.labels[(self.labels<1) & (self.labels>-1)] = 0
         return self.labels, good_ratio #THIS IS NOT USED SO FAR, BUT SHOULD BE.
+    
+    
+    def generate_labels(self, start, end, wsize = 100, sliding_window =0, method='ratio'):
+        dur = end - start
+        time_passed = 0
+        curr_data = None
+        ratio = None
+        idx = 0
+        while dur>time_passed+wsize:
+            try:
+                day = self.df['Day'].loc[idx]
+            except KeyError:
+                print ("Not enough data loaded into memory for this request.")
+                return data
+            if start >= self.df['End'].loc[idx]-self.df['Start'].loc[idx]: #if startsample is after duration of data of first day, go to next day, change stuff
+                passed_not_used = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
+                start -= passed_not_used #how much do we have to reduce time_sta?
+                end -= passed_not_used
+                continue
+            data = self.df['BinnedLabels'].loc[idx]
+            mat, rat = self._generate_labels_single_day(data,start,start+dur-time_passed, wsize, sliding_window)
+            if idx == 0:
+                curr_data = mat
+                ratio = rat
+            else:
+                curr_data = np.append(curr_data,mat,axis = None)
+                ratio = np.append(ratio,rat,axis=None)
+            idx +=1
+            if sliding_window:
+                time_passed = wsize+sliding_window*(curr_data.shape[0]-1)
+            else:
+                time_passed = wsize*(curr_data.shape[0])
+            start = 0 #for the next day, in case the initial starting time wasn't zero
+        return curr_data, ratio
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:

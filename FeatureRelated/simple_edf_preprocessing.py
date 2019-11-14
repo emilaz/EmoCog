@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[1]:
@@ -13,8 +13,17 @@ import h5py
 # In[ ]:
 
 
+"""
+Class for preprocessing the ECoG data.
+"""
+
 class Preprocessor:
-    def __init__(self,data=None,start_sample=0,end_sample=None):
+    
+    """
+    Init function. Takes data as given by FeatureDataHolder class, sets the bad indices and bad channels.
+    Input: Data, start and end in sample no. (not! seconds)
+    """
+    def __init__(self,data=None,chan_info=None,start_sample=0,end_sample=None):
         self.data=data
         self.start=start_sample
         if end_sample is None:
@@ -22,65 +31,19 @@ class Preprocessor:
         else:
             self.end=end_sample
         self.df=data['dataset'][:,start_sample:end_sample]
-        self.bad_idx=np.zeros(data['dataset'].shape[1],dtype='bool')
-        self.bad_chans=np.zeros(data['dataset'].shape[0],dtype='bool')
+        self.bad_chans=~(np.array([chan_info[c]['goodChanInds'] for c in chan_info.columns]).astype('bool'))
         
-    #what do I want to filter??
-    #first, detect channels that are just flat signal
-    def __bad_chan(self,prefiltered_sd_kurt=True):
-        unique_entr_per_chan=np.count_nonzero(np.diff(np.sort(self.df)), axis=1)+1
-        #which channels have only few entries? Throw away
-        self.bad_chans=unique_entr_per_chan<10
-        if(prefiltered_sd_kurt):
-            #convert the goodchan indices to a bad chan boolean mask
-            temp=np.ones(self.df.shape[0],dtype='bool')
-            temp[self.data['goodChanInds']]=False
-            self.bad_chans=np.logical_or(self.bad_chans,temp)
-        else:
-            all_std=self.data['SD_channels'][()]
-            std_std=np.std(all_std)
-            std_mean=np.mean(all_std)
-            too_high_std=all_std>std_mean+1.5*std_std
-            self.bad_chans=np.logical_or(self.bad_chans,too_high_std[0,:])
-           
-            
-    #second, get indices of intermediate flat signal
-    def __flat_sig(self):
-        #entries with high altitude? 
-        self.bad_idx[np.array(self.data['allChanArtifactInds'][()][:],dtype=int)]=True
-        self.bad_idx=self.bad_idx[self.start:self.end] # these indices correspond to times starting from the beginning of recording. They need to be shifted so they match the 'new' beginning (start_sample)
-#this function 
-    def preprocess(self,prefiltered_sd_kurt=True,by_artifact=True):
-        self.__flat_sig()
-        self.__bad_chan(prefiltered_sd_kurt=prefiltered_sd_kurt)
-        return self.df, self.bad_chans,self.bad_idx
-        
-    
-#     #third, vals with too high of a variance are to be excluded. Note that varience is calculated without bad points
-#     #for excluding high vars, we calculate the variance of each channel, calc the std across these variances, exclude values 
-#     #that are more than 2 std away
-#     def high_var(self):
-#         #next, let's look at variation changes per channel
-#         #get rid of points that are way off the mean
-#         vars_per_chan=[]
-#         for i in range(self.data.shape[0]):
-#             if self.bad_chans[i]!=True:
-#                 mean=np.mean(self.data[i,self.bad_idx[i]!=True])
-#                 std=np.std(self.data[i,self.bad_idx[i]!=True])
-#                 self.bad_idx[i]=np.logical_or(self.bad_idx[i],self.bad_idx[i]>mean+2*std)
-#                 vars_per_chan+=[std**2]
-#             else:
-#                 vars_per_chan+=[np.nan]
-#         #calc variance across time points that are OK
-#         var=np.array(vars_per_chan)
-#         #what is standart deviation and mean among the variances OF GOOD CHANNELS?
-#         varmean=np.nanmean(var[self.bad_chans!=True])
-#         varstd=np.std(var[self.bad_chans!=True])
-#         print(varmean,varstd)
-#         #get rid of avg that shoot way above. THESE ARE CHANNELS
-#         self.bad_var=var>varmean+1*varstd
 
-        
+    """
+    Function to call both functions for preprocessing, one for channels, one for indices (see above)
+    Input: Which of the two we want
+    Output: The dataframe itself, in given time window (start and end time), indices of bad chans and bad indices
+    """
+    def preprocess(self,prefiltered_sd_kurt=True,by_artifact=True):
+        #self.__flat_sig()
+        #self.__bad_chan()
+        return self.df, self.bad_chans
+    
 
 
 # In[ ]:
