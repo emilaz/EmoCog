@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from scipy import signal
 import warnings
-from Util import FeatureUtils as util
+import util.feature_utils as util
 
 
 # In[2]:
@@ -34,7 +34,7 @@ class Feature_generator:
         self.std = None #these parameters are used for standardization.
         self.mean = None # Use same parameter and apply to eval/test data.
         self.std_lim = None #used for artifact detection, also on eval set.
-        self.std_med = None
+        self.std_med = None #used for artifact detection, also on eval set.
         self.bad_indices = dict() #this needs to be passed on to the label side. Will include bad indices found during calculation and artifacts found later
 
     """
@@ -46,12 +46,12 @@ class Feature_generator:
     Input: Start and end time (in secs), bool for whether train data or not (for PCA), window size and sliding window in sec
     Output: Standardized, binned data.
     """
-    def _calc_features(self,data, time_sta,time_stp, wsize = 100, sliding_window=False):
+    def _calc_features(self,data, start,end, wsize = 100, sliding_window=False):
         bads = []
-        time_it = time_sta
+        time_it = start
         mat = None
         idx = 0
-        print('from {} to {}'.format(time_sta,time_stp))
+        print('from {} to {}'.format(start,end))
         while True:
             stop = time_it + wsize
             if stop >= data.shape[1]-1:
@@ -71,7 +71,7 @@ class Feature_generator:
                     time_it += sliding_window
                 else:
                     time_it += wsize
-                if time_it + wsize >= time_stp+1:
+                if time_it + wsize >= end+1:
                     break
                 idx+=1
                 continue
@@ -90,14 +90,14 @@ class Feature_generator:
                 time_it += sliding_window
             else:
                 time_it += wsize
-            if time_it + wsize >= time_stp+1:
+            if time_it + wsize >= end+1:
                 break
         return mat, bads #we do the standardization after the filtering
     
     
-    def _calc_features_over_days(self,time_sta,time_stp, wsize = 100, sliding_window=False):
+    def _calc_features_over_days(self,start,end, wsize = 100, sliding_window=False):
         #here, check how many days we need for the requested datasize
-        duration = time_stp - time_sta
+        duration = end - start
         time_passed = 0
         curr_data = None
         idx = 0
@@ -109,22 +109,22 @@ class Feature_generator:
             except KeyError:
                 print("Not enough data loaded into memory for this request.")
                 return curr_data
-            print('time start is {}, and the end of the first day is{}'.format(time_sta, self.df['End'].loc[idx]))
-            if time_sta >= self.df['End'].loc[idx]-self.df['Start'].loc[idx]: #if startsample is after duration of data of first day, go to next day, change stuff
-                passed_not_used = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
-                time_sta -= passed_not_used #how much do we have to reduce time_sta?
-                time_stp -= passed_not_used
-                print('jo soviel vergangen{}, so sind die nun {},{}'.format(passed_not_used,time_sta,time_stp))
+            print('time start is {}, and the end of the first day is{}'.format(start, self.df['End'].loc[idx]))
+            curr_dur = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
+            if start + wisze >= curr_dur: #if startsample is after duration of data of first day, go to next day, change stuff
+                print('erstmal so start {} end {}'.format(start,end))
+                end = end-curr_dur+min(0,start-curr_dur) 
+                start = max(start-curr_dur,0) #sometimes, start<curr_dur, aber kein ganzes window passt mehr rein.
+                print('jo soviel vergangen{}, so sind die nun {},{}'.format(curr_dur,start,end))
                 continue
             data = self.df['BinnedData'].loc[idx]
-            mat, bad = self._calc_features(data,time_sta,time_sta+duration-time_passed, wsize, sliding_window)
+            mat, bad = self._calc_features(data,start,start+duration-time_passed, wsize, sliding_window)
             if idx == 0:
                 self.bad_indices['NaNs'] = np.array(bad)
                 curr_data = mat
-                print('jo hier war ich jetzt drin.')
             else:
                 self.bad_indices['NaNs'] = np.append(self.bad_indices['NaNs'],np.array(bad)+len(self.bad_indices['NaNs'])+curr_data.shape[1])
-                print(self.bad_indices['NaNs'], 'this is how the nan indices look after adding some on the next day')
+                #print(self.bad_indices['NaNs'], 'this is how the nan indices look after adding some on the next day')
                 curr_data = np.append(curr_data,mat,axis=1)
             idx +=1
             print('jo das ist die laenge', len(self.bad_indices['NaNs']), 'das die andere', curr_data.shape )
@@ -134,7 +134,7 @@ class Feature_generator:
             else:
                 time_passed = wsize*(curr_data.shape[1]+ len(self.bad_indices['NaNs']))
             print(time_passed, 'jo stimmt das hier mit der time passed?')
-            time_sta = 0 #for the next day, in case the initial starting time wasn't zero
+            start = 0 #for the next day, in case the initial starting time wasn't zero
         return curr_data
             
             

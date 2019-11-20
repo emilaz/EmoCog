@@ -90,10 +90,11 @@ class Label_generator:
             except KeyError:
                 print ("Not enough data loaded into memory for this request.")
                 return data
-            if start >= self.df['End'].loc[idx]-self.df['Start'].loc[idx]: #if startsample is after duration of data of first day, go to next day, change stuff
-                passed_not_used = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
-                start -= passed_not_used #how much do we have to reduce time_sta?
-                end -= passed_not_used
+            curr_dur = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
+            if start + wsize>= curr_dur: #if startsample is after duration of data of first day, go to next day, change stuff
+                end = end-curr_dur+min(0,start-curr_dur) 
+                start = max(start-curr_dur,0) #sometimes, start<curr_dur, aber kein ganzes window passt mehr rein.
+                print('jo soviel vergangen{}, so sind die nun {},{}'.format(passed_not_used,start,end))
                 continue
             data = self.df['BinnedLabels'].loc[idx]
             mat, rat = self._generate_labels_single_day(data,start,start+dur-time_passed, wsize, sliding_window)

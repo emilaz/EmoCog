@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[2]:
 
 
+import sys
+sys.path.append('..')
 import numpy as np
 import pandas as pd
-from Util import LabelUtils as util
+import util.label_utils as util
 
 
-# In[ ]:
+# In[45]:
 
 
 """
@@ -20,57 +22,62 @@ class LabelDataHolder:
     Init function. Loads data in given start-end window and bins the data.
     Input: Path to label file, start and end point (in seconds) of labels wanted, type of label wanted (predicted vs. annotated)
     """
-    def __init__(self,path,start=0,end=None, col='Happy_predicted'):
+    def __init__(self, path, start, end, col = 'Happy_predicted'):
         if path.endswith('.csv'):
-            self.df=pd.read_csv(path,error_bad_lines=False, low_memory=False)#,dtype={'realtime':'datetime64'})
+            self.df = pd.read_csv(path, error_bad_lines=False, low_memory=False)
         elif path.endswith('.hdf'):
-            self.df=pd.read_hdf(path,error_bad_lines=False, low_memory=False)#,dtype={'realtime':'datetime64'})
-        self.fps=30   #Update June: Apparently openface corrects fr to 30FPS
-        self.start=start*self.fps
-        if end is None:
-            self.end=self.df.shape[0]
-        else:
-            self.end=end*self.fps
-        labels=self.create_label_array(self.start,self.end,col)
-        self.pred_bin=self._bin_preds(labels)
+            self.df = pd.read_hdf(path, error_bad_lines=False, low_memory=False)
+        self.fps = 30   
+        self.start = start * self.fps
+        self.end=end * self.fps
+        empty_labels = self.create_empty_array()
+        self.filled_labels = self.fill_label_array(empty_labels, col)
+        self.labels = self.filled_labels[self.start:self.end]
+        self.pred_bin=self._bin_preds(self.labels)
+     
+    
+    """
+    Creates an array for 24 hours of data. 
+    Plan is to then fill in the labels at the corresponding points in time
+    Cut this off at corresponding times later    
+    """
         
-        
+    def create_empty_array(self):
+        empty = np.empty(24*3600*self.fps) #for a whole of 24 hours
+        empty[:]=np.nan
+        return empty
+    
     """
     Given the dataframe and desired number of frames, return array with labels.
-    Input: Whole df, number of frames wnated
+    Input: 
     Output: Big array
     """
     
-    def create_label_array(self,start,end, col):
-        vid_nos = self.df['vid'].unique()
-        last_vid = vid_nos[-1] #assuming ordering
-        big_array = None
-        first = True
-        fill_vid_after = [False]
-        sanity = False #this just for debug
-        for vid in vid_nos:
-            actual_frames = self.df[self.df['vid']==vid][col].values #actual frames saved in hdf from gautham
-            if col == 'annotated': #the annotated labels are strings. Convert here.
-                actual_frames = util.convert_labels_readable(actual_frames)
-            supposed_no_frames = util.find_number_frames(self.df,vid, last_vid, fill_vid_after) #how many frames does the video actually have?
-            ret = util.fill_frames(actual_frames,supposed_no_frames) #fill the frames
-            if fill_vid_after[0]: #for some reason, some videos are missing from hdf. Fill in nans for this here
-                empty_vid = np.empty(120*self.fps)
-                empty_vid[:]=np.nan
-                ret = np.append(ret,empty_vid)
-                fill_vid_after[0] = False
-            if first:
-                big_array = ret
-                first = False
-            else:
-                big_array = np.concatenate((big_array,ret),axis=None)
-            if len(big_array)>=end:
-                big_array[start:end]
-                sanity = True
-                break
-        if not sanity:
-            print('Jo hier ist was falsch. Angeblich nicht genug Datan der Bastard?')
-        return big_array
+    def fill_label_array(self, labels, col):
+        sess_nos = sorted(self.df['session'].unique())
+        for sess in sess_nos:
+            print('next sess', sess)
+            curr_sess = self.df[self.df['session'] == sess]
+            vid_nos = sorted(curr_sess['vid'].unique())
+            last_vid = vid_nos[-1]
+            for vid in vid_nos:
+                actual_frames = curr_sess[curr_sess['vid']==vid][col].values #actual frames saved in hdf from gautham
+                if col == 'annotated': #the annotated labels are strings. Convert here.
+                    actual_frames = util.convert_labels_readable(actual_frames)
+                start, supposed_no_frames = util.find_number_frames(curr_sess,vid, last_vid) #how many frames does the video actually have?
+#                 if np.any(~np.isnan(actual_frames)):
+#                     print('video {},we start filling at {}, meaning {}s, and fill till {},meaning {}s'.format(vid,start,start/30,start+supposed_no_frames,(start+supposed_no_frames)/30))
+#                     print('first frame with not nan {}, which from start is {}, in secs {}'.format(np.argmax(~np.isnan(actual_frames)),(start+np.argmax(~np.isnan(actual_frames))),(start+np.argmax(~np.isnan(actual_frames)))/30))
+#                 ret = util.fill_frames(actual_frames,supposed_no_frames) #fill the frames
+#                 if np.any(~np.isnan(actual_frames)):
+#                     print('after shuffling around, this goes to {}'.format(np.argmax(~np.isnan(ret))))
+                if(start+supposed_no_frames>len(labels)):
+                    ret = ret[:len(labels)-start]
+                    print('Omitting part of vid {}/{} because it goes beyond 12AM'.format(vid,last_vid))
+                    continue
+                labels[start:start + supposed_no_frames] = ret
+        return labels
+        
         
     """
     Function for binning labels. Also converts the char predictions ('Happy'/'Not Happy') into usable bools if needed.
@@ -80,7 +87,9 @@ class LabelDataHolder:
     def _bin_preds(self,labels):
         #bin s.t. each column is one sec.
         end=labels.shape[0]//self.fps
-        return labels[:self.fps*end].reshape(-1,self.fps)
+        ret = labels[:self.fps*end].reshape(-1,self.fps)
+        print('this was supposed to be the end {} this is what it wants to go to {} and this is the end length {}'.format(self.end,end,ret.shape[0]))
+        return ret
     
     def get_pred_bin(self):
         return self.pred_bin
