@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[15]:
+# In[ ]:
 
 
 #%matplotlib inline
@@ -15,7 +15,7 @@ import warnings
 import util.feature_utils as util
 
 
-# In[2]:
+# In[ ]:
 
 
 """
@@ -37,6 +37,7 @@ class Feature_generator:
         self.std_med = None #used for artifact detection, also on eval set.
         self.bad_indices = dict() #this needs to be passed on to the label side. Will include bad indices found during calculation and artifacts found later
 
+        
     """
     Function needed for calculating the features. Central piece on the feature side. Works as follows:
     columns: channels, for each channel the 150 frequencies (0-150Hz) (hece freq*cha length), binned logarithmically
@@ -51,11 +52,11 @@ class Feature_generator:
         time_it = start
         mat = None
         idx = 0
-        print('from {} to {}'.format(start,end))
+        print('Calculating feat data from {} to {}'.format(start,end))
         while True:
             stop = time_it + wsize
-            if stop >= data.shape[1]-1:
-                print('we went here, why? shape is', data.shape[1]-1)
+            if stop > data.shape[1]:
+                print('Feature side, apparently stop is bigger than data available', data.shape[1]-1)
                 break
             #Note that each column is exactly one second.
             #get data in range of ALL channels
@@ -71,7 +72,7 @@ class Feature_generator:
                     time_it += sliding_window
                 else:
                     time_it += wsize
-                if time_it + wsize >= end+1:
+                if time_it + wsize > end:
                     break
                 idx+=1
                 continue
@@ -90,42 +91,42 @@ class Feature_generator:
                 time_it += sliding_window
             else:
                 time_it += wsize
-            if time_it + wsize >= end+1:
+            if time_it + wsize > end:
                 break
         return mat, bads #we do the standardization after the filtering
     
     
-    def _calc_features_over_days(self,start,end, wsize = 100, sliding_window=False):
+    def _calc_features_over_days(self, start, end, wsize = 100, sliding_window=False):
         #here, check how many days we need for the requested datasize
         duration = end - start
         time_passed = 0
         curr_data = None
         idx = 0
-        while duration>time_passed+wsize: #if not a single additional window would fit, break
-            print('jo schau')
+        while duration >= time_passed+wsize: #if not a single additional window would fit, break
             try:
                 day = self.df['Day'].loc[idx]
                 print('Day No {}'.format(day))
             except KeyError:
                 print("Not enough data loaded into memory for this request.")
-                return curr_data
+                break
             print('time start is {}, and the end of the first day is{}'.format(start, self.df['End'].loc[idx]))
             curr_dur = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
-            if start + wisze >= curr_dur: #if startsample is after duration of data of first day, go to next day, change stuff
+            if start + wsize >= curr_dur: #if startsample is after duration of data of first day, go to next day, change stuff
                 print('erstmal so start {} end {}'.format(start,end))
                 end = end-curr_dur+min(0,start-curr_dur) 
                 start = max(start-curr_dur,0) #sometimes, start<curr_dur, aber kein ganzes window passt mehr rein.
                 print('jo soviel vergangen{}, so sind die nun {},{}'.format(curr_dur,start,end))
+                idx += 1
                 continue
             data = self.df['BinnedData'].loc[idx]
             mat, bad = self._calc_features(data,start,start+duration-time_passed, wsize, sliding_window)
-            if idx == 0:
-                self.bad_indices['NaNs'] = np.array(bad)
+            if curr_data is None:
                 curr_data = mat
+                self.bad_indices['NaNs'] = np.array(bad)
             else:
                 self.bad_indices['NaNs'] = np.append(self.bad_indices['NaNs'],np.array(bad)+len(self.bad_indices['NaNs'])+curr_data.shape[1])
-                #print(self.bad_indices['NaNs'], 'this is how the nan indices look after adding some on the next day')
-                curr_data = np.append(curr_data,mat,axis=1)
+                if mat is not None:
+                    curr_data = np.append(curr_data,mat,axis=1)
             idx +=1
             print('jo das ist die laenge', len(self.bad_indices['NaNs']), 'das die andere', curr_data.shape )
             #calculate how many secs have passed
@@ -172,8 +173,9 @@ class Feature_generator:
         if train: #if it's train data, then get its mean and std for standardization
             self.std = np.std(good_data,axis=1)
             self.mean = np.mean(good_data,axis=1)
-        data_scal = util.standardize(good_data,self.std,self.mean)
-        princ_components=self._setup_PCA(data_scal.T,train=train,expl_variance=expl_variance)
+        data_scal = util.standardize(good_data, self.std, self.mean)
+        princ_components = self._setup_PCA(data_scal.T, train = train, expl_variance = expl_variance)
+        print('this is how the principal components look like, shapewise', princ_components.shape,'this is before',data_scal.shape)
         return princ_components
     
     """

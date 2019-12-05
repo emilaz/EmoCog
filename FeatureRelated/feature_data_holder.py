@@ -9,7 +9,6 @@ import sys
 sys.path.append('..')
 import h5py
 from .simple_edf_preprocessing import Preprocessor
-#from simple_edf_preprocessing import Preprocessor
 from Vis import FeatureVis
 import numpy as np
 import pandas as pd

@@ -23,13 +23,10 @@ class Preprocessor:
     Init function. Takes data as given by FeatureDataHolder class, sets the bad indices and bad channels.
     Input: Data, start and end in sample no. (not! seconds)
     """
-    def __init__(self,data=None,chan_info=None,start_sample=0,end_sample=None):
+    def __init__(self,data,chan_info,start_sample,end_sample):
         self.data=data
         self.start=start_sample
-        if end_sample is None:
-            self.end=data['dataset'].shape[1]-1
-        else:
-            self.end=end_sample
+        self.end=end_sample
         self.df=data['dataset'][:,start_sample:end_sample]
         self.bad_chans=~(np.array([chan_info[c]['goodChanInds'] for c in chan_info.columns]).astype('bool'))
         
@@ -40,8 +37,6 @@ class Preprocessor:
     Output: The dataframe itself, in given time window (start and end time), indices of bad chans and bad indices
     """
     def preprocess(self,prefiltered_sd_kurt=True,by_artifact=True):
-        #self.__flat_sig()
-        #self.__bad_chan()
         return self.df, self.bad_chans
     
 

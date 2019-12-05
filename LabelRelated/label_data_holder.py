@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[1]:
 
 
 import sys
@@ -31,9 +31,11 @@ class LabelDataHolder:
         self.start = start * self.fps
         self.end=end * self.fps
         empty_labels = self.create_empty_array()
-        self.filled_labels = self.fill_label_array(empty_labels, col)
-        self.labels = self.filled_labels[self.start:self.end]
-        self.pred_bin=self._bin_preds(self.labels)
+        filled_labels = self.fill_label_array(empty_labels, col)
+        labels = filled_labels[self.start:self.end]
+        del(filled_labels)
+        del(empty_labels)
+        self.pred_bin=self._bin_preds(labels)
      
     
     """
@@ -68,7 +70,7 @@ class LabelDataHolder:
 #                 if np.any(~np.isnan(actual_frames)):
 #                     print('video {},we start filling at {}, meaning {}s, and fill till {},meaning {}s'.format(vid,start,start/30,start+supposed_no_frames,(start+supposed_no_frames)/30))
 #                     print('first frame with not nan {}, which from start is {}, in secs {}'.format(np.argmax(~np.isnan(actual_frames)),(start+np.argmax(~np.isnan(actual_frames))),(start+np.argmax(~np.isnan(actual_frames)))/30))
-#                 ret = util.fill_frames(actual_frames,supposed_no_frames) #fill the frames
+                ret = util.fill_frames(actual_frames,supposed_no_frames) #fill the frames
 #                 if np.any(~np.isnan(actual_frames)):
 #                     print('after shuffling around, this goes to {}'.format(np.argmax(~np.isnan(ret))))
                 if(start+supposed_no_frames>len(labels)):

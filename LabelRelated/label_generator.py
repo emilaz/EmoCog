@@ -7,7 +7,7 @@
 import numpy as np
 
 
-# In[ ]:
+# In[4]:
 
 
 """
@@ -34,37 +34,36 @@ class Label_generator:
     Input: Start point, End Point (in seconds), Windowsize for subsuming, method for subsuming labels in given window (ratio or median), Cutoff if we need boolean labels).
     Output: Usable labels for regression/classification task. If classification is used, also returns the percentage of non-nan labels per label generated.
     """
-    def _generate_labels_single_day(self,data, start=0, end=None, wsize = 100, sliding_window = 0,method='ratio'):
+    def _generate_labels_single_day(self,data, wsize = 100, sliding_window = 0,method='ratio'):
         if method != 'ratio' and method != 'median':
             raise NameError('The given method does not exist. Try one of the following: ratio,median.')
         if method is 'median':
             print('Note: The median method is currently a 75 percentile.')
-        if end is None or end >= data.shape[0]:
-            end = data.shape[0]-1
         #average "happiness" per second
         happy_portion = np.nanmean(np.array(data, dtype = 'float'),axis = 1)
-        #check nans along the 31FPS
         non_nans_per_s = np.count_nonzero(~np.isnan(np.array(data, dtype='float')),axis = 1)
-        #if(sliding_window):
         self.labels = []
         good_ratio = []
-        time_it = start
+        time_it = 0
         while True:
-            stop = time_it+wsize
-            curr_data = happy_portion[time_it:stop]           
+            stop = time_it + wsize
+            if stop > data.shape[0]:
+                print('This day gave us {} secs worth of data', data.shape[0]-1)
+                break
+            curr_data = happy_portion[time_it:stop]   
             curr_non_nans = np.sum(non_nans_per_s[time_it:stop])
             if not curr_data.size:
-                print('Whole chunk of NaNs. Check this again.')
+                print('SOMETHINGS WRONG HERE. CHECK.')
                 if sliding_window:
                     time_it += sliding_window
                 else:
                     time_it += wsize
-                if time_it + wsize > end:
-                    break
                 continue
-            #here, we divide by len(curr_data), because we don't want the influence of nans that were thrown away due to bad feature points.
+            #here, we divide by len(curr_data), because 
+            #we don't want the influence of nans that were thrown away
+            #due to bad feature points.
             good_ratio += [float(curr_non_nans)/(self.fps*len(curr_data))]
-            if method =='ratio':
+            if method == 'ratio':
                 self.labels += [np.nanmean(curr_data)]
             elif method == 'median':
                 self.labels += [np.nanpercentile(curr_data,q=75)]
@@ -72,51 +71,54 @@ class Label_generator:
                 time_it += sliding_window
             else:
                 time_it += wsize
-            if time_it + wsize > end:
-                break
         self.labels = np.array(self.labels)
         return self.labels, good_ratio #THIS IS NOT USED SO FAR, BUT SHOULD BE.
     
     
-    def generate_labels(self, start, end, wsize = 100, sliding_window =0, method='ratio'):
-        dur = end - start
+    def generate_labels(self, wsize = 100, sliding_window =0, method='ratio'):
         time_passed = 0
         curr_data = None
         ratio = None
-        idx = 0
-        while dur>time_passed+wsize:
-            try:
-                day = self.df['Day'].loc[idx]
-            except KeyError:
-                print ("Not enough data loaded into memory for this request.")
-                return data
-            curr_dur = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
-            if start + wsize>= curr_dur: #if startsample is after duration of data of first day, go to next day, change stuff
-                end = end-curr_dur+min(0,start-curr_dur) 
-                start = max(start-curr_dur,0) #sometimes, start<curr_dur, aber kein ganzes window passt mehr rein.
-                print('jo soviel vergangen{}, so sind die nun {},{}'.format(passed_not_used,start,end))
-                continue
-            data = self.df['BinnedLabels'].loc[idx]
-            mat, rat = self._generate_labels_single_day(data,start,start+dur-time_passed, wsize, sliding_window)
-            if idx == 0:
+        for day in self.df['Day']:
+            print('Day', day)
+            data = self.df[self.df['Day']==day].BinnedLabels.values[0]
+            mat, rat = self._generate_labels_single_day(data, wsize, sliding_window)
+            if curr_data is None:
                 curr_data = mat
                 ratio = rat
             else:
                 curr_data = np.append(curr_data,mat,axis = None)
                 ratio = np.append(ratio,rat,axis=None)
-            idx +=1
-            if sliding_window:
-                time_passed = wsize+sliding_window*(curr_data.shape[0]-1)
-            else:
-                time_passed = wsize*(curr_data.shape[0])
-            start = 0 #for the next day, in case the initial starting time wasn't zero
         return curr_data, ratio
 
 
-# In[ ]:
+# In[3]:
 
 
+# import pandas as pd
 
+
+# In[5]:
+
+
+# days = [3,4]
+# all_days_df = pd.DataFrame(columns = ['Patient','Day','BinnedData','BinnedLabels', 'GoodChans'], index=range(len(days)))
+# for enum,day in enumerate(days):
+#     print(day,'this day')
+#     ####for testing
+#     labels = np.arange(day,10)[:,None]
+#     features = np.tile(np.arange(day,10)[None,:],(3,1)).astype('float')
+#     features[:,2]=np.nan
+#     print(features)
+#     good_chans = np.array(['yes'+str(day),'mes','tes'])
+#     curr_ret = ['test', day, features,labels,good_chans]      
+#     all_days_df.loc[enum] = curr_ret
+
+
+# In[74]:
+
+
+# import pandas as pd
 
 
 # In[ ]:

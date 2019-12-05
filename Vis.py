@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # In[2]:
@@ -23,7 +23,7 @@ from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_prec
 from sklearn.model_selection import StratifiedKFold
 
 
-# In[4]:
+# In[1]:
 
 
 class ClassificationVis:
@@ -65,12 +65,12 @@ class ClassificationVis:
         rates = np.array([tp,fp,fn,tn]).reshape((2,2))
         df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
         plt.figure(figsize = (10,7))
-        sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 20})
+        sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
         plt.show()
         
 
     def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!!
-        cv = StratifiedKFold(n_splits=10, shuffle=True)
+        cv = StratifiedKFold(n_splits=10, shuffle=False)
         tprs = []
         aucs = []
         fpr_interval = np.linspace(0, 1, 100)
@@ -295,4 +295,6 @@ class FeatureVis:
             x=np.array(components[:count]), y=explained_variance,
             fit_reg=False).get_figure()
         return optimal_no_comps
+
+    
 

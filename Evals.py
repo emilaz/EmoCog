@@ -23,7 +23,7 @@ def get_pos_and_negs(pred,true):
     fp = sum(pred[pred == 1] != true[pred == 1])
     tn = sum(pred[pred == 0] == true[pred == 0])
     fn = sum(pred[pred == 0] != true[pred == 0])
-    return tp,fp,tn,fn
+    return tp,fp,fn,tn
     
 """
 Function to get rates of TP etc.
@@ -31,7 +31,7 @@ Input: Predictions, Ground truth
 Output: True Positive Rate, FPR, TNR, FNR
 """
 def get_rates(pred,true):
-    tp,fp,tn,fn = get_pos_and_negs(pred,true)
+    tp,fp,fn,tn = get_pos_and_negs(pred,true)
     tpr = tp/float(len(true[true==1]))
     fpr = fp/float(len(true[true==0]))
     tnr = tn/float(len(true[true==0]))
@@ -43,7 +43,7 @@ Input: Predictions, Ground truth
 Output: Precision, Recall
 """
 def get_precision_recall(pred,true):
-    tp,fp,tn,fn = get_pos_and_negs(pred,true)
+    tp,fp,fn,tn = get_pos_and_negs(pred,true)
     precision = tp/max(1.,float(tp+fp))
     recall = tp/max(1.,float(tp+fn))
     return precision,recall
