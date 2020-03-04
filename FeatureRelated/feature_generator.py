@@ -8,8 +8,6 @@
 import sys
 sys.path.append('..')
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 from scipy import signal
 import warnings
 import util.feature_utils as util
@@ -29,13 +27,9 @@ class Feature_generator:
     def __init__(self,df):
         #sampling frequency and last sample taken
         self.sfreq = 500 #will always be, hopefully lol
+        #TODO CHange this back to use the one from featureutils!!!!
         self.df = util.filter_common_channels(df)
-        self.pca = None
-        self.std = None #these parameters are used for standardization.
-        self.mean = None # Use same parameter and apply to eval/test data.
-        self.std_lim = None #used for artifact detection, also on eval set.
-        self.std_med = None #used for artifact detection, also on eval set.
-        self.bad_indices = dict() #this needs to be passed on to the label side. Will include bad indices found during calculation and artifacts found later
+        self.bad_indices = None #this needs to be passed on to the label side. Will include bad indices found during calculation
 
         
     """
@@ -47,21 +41,19 @@ class Feature_generator:
     Input: Start and end time (in secs), bool for whether train data or not (for PCA), window size and sliding window in sec
     Output: Standardized, binned data.
     """
-    def _calc_features(self,data, start,end, wsize = 100, sliding_window=False):
+    def _generate_features_single_day(self,data, wsize = 100, sliding_window=False):
         bads = []
-        time_it = start
+        time_it = 0
         mat = None
         idx = 0
-        print('Calculating feat data from {} to {}'.format(start,end))
         while True:
             stop = time_it + wsize
             if stop > data.shape[1]:
-                print('Feature side, apparently stop is bigger than data available', data.shape[1]-1)
+                print('This day gave us {} seconds worth of data'.format(data.shape[1]-1))
                 break
             #Note that each column is exactly one second.
             #get data in range of ALL channels
             curr_data = data[:,time_it:stop,:].reshape(data.shape[0],-1)
-            
             #welch method 
             fr,psd = signal.welch(curr_data,self.sfreq,nperseg=250)
             
@@ -72,15 +64,12 @@ class Feature_generator:
                     time_it += sliding_window
                 else:
                     time_it += wsize
-                if time_it + wsize > end:
-                    break
                 idx+=1
                 continue
-                  
+            
             fr_bin,psd_bin = util.bin_psd(fr,psd)
             idx+=1
             if mat is None:
-                self.fr_bin = fr_bin
                 #first time. create first column, flatten w/o argument is row major 
                 mat = psd_bin.flatten()
             else:
@@ -91,93 +80,27 @@ class Feature_generator:
                 time_it += sliding_window
             else:
                 time_it += wsize
-            if time_it + wsize > end:
-                break
         return mat, bads #we do the standardization after the filtering
     
     
-    def _calc_features_over_days(self, start, end, wsize = 100, sliding_window=False):
+    def generate_features(self, wsize = 100, sliding_window=False):
         #here, check how many days we need for the requested datasize
-        duration = end - start
         time_passed = 0
         curr_data = None
-        idx = 0
-        while duration >= time_passed+wsize: #if not a single additional window would fit, break
-            try:
-                day = self.df['Day'].loc[idx]
-                print('Day No {}'.format(day))
-            except KeyError:
-                print("Not enough data loaded into memory for this request.")
-                break
-            print('time start is {}, and the end of the first day is{}'.format(start, self.df['End'].loc[idx]))
-            curr_dur = self.df['End'].loc[idx]-self.df['Start'].loc[idx]
-            if start + wsize >= curr_dur: #if startsample is after duration of data of first day, go to next day, change stuff
-                print('erstmal so start {} end {}'.format(start,end))
-                end = end-curr_dur+min(0,start-curr_dur) 
-                start = max(start-curr_dur,0) #sometimes, start<curr_dur, aber kein ganzes window passt mehr rein.
-                print('jo soviel vergangen{}, so sind die nun {},{}'.format(curr_dur,start,end))
-                idx += 1
-                continue
-            data = self.df['BinnedData'].loc[idx]
-            mat, bad = self._calc_features(data,start,start+duration-time_passed, wsize, sliding_window)
+        for day in self.df['Day']:
+            print('Day', day)
+            data = self.df[self.df['Day']==day].BinnedData.values[0]
+            mat, bad = self._generate_features_single_day(data, wsize, sliding_window)
             if curr_data is None:
                 curr_data = mat
-                self.bad_indices['NaNs'] = np.array(bad)
+                self.bad_indices = np.array(bad)
             else:
-                self.bad_indices['NaNs'] = np.append(self.bad_indices['NaNs'],np.array(bad)+len(self.bad_indices['NaNs'])+curr_data.shape[1])
+                self.bad_indices = np.append(self.bad_indices,np.array(bad)+len(self.bad_indices)+curr_data.shape[1])
                 if mat is not None:
                     curr_data = np.append(curr_data,mat,axis=1)
-            idx +=1
-            print('jo das ist die laenge', len(self.bad_indices['NaNs']), 'das die andere', curr_data.shape )
-            #calculate how many secs have passed
-            if sliding_window:
-                time_passed = wsize+sliding_window*(curr_data.shape[1] + len(self.bad_indices['NaNs'])-1)
-            else:
-                time_passed = wsize*(curr_data.shape[1]+ len(self.bad_indices['NaNs']))
-            print(time_passed, 'jo stimmt das hier mit der time passed?')
-            start = 0 #for the next day, in case the initial starting time wasn't zero
         return curr_data
             
-            
 
-        
-    """
-    Sets up PCA parameters in case of training, otherwise just transforms
-    Input: Data, train bool, amount of variance one wants to be explained (automatically calculates no. of PD needed)
-    Output: Data in PC space.
-    """
-    def _setup_PCA(self,curr_data,train,expl_variance):
-        if not train and self.pca is None:
-            raise ValueError('Train set has to be generated first, otherwise no principal axis available for data trafo.')
-        if train:
-            print('Setting up PCA on current data range...')
-            no_comps=util.get_no_comps(curr_data,expl_variance)
-            self.pca=PCA(n_components=no_comps)
-            self.pca.fit(curr_data)
-        return self.pca.transform(curr_data)
-    
-    
-    """
-    Function that actually generates the features.
-    Input: Start and end time (in secs), windowsize, sliding window (in s), train bool, variance to be explained by PCA.
-    Output: Features
-    """
-    def generate_features(self,start=0,end=None, wsize=100, sliding_window=False, train=True,expl_variance=85):
-        curr_data = self._calc_features_over_days(start,end,wsize,sliding_window)
-        #from here on, days don't matter anymore. We have a chunk of data, which is nice
-        if train:
-            self.bad_indices['Artifacts'], self.std_lim, self.std_med = util.detect_artifacts(curr_data) #JO HIER TRAIN MITGEEBEN
-        else:
-            self.bad_indices['Artifacts'], _,_ = util.detect_artifacts(curr_data, self.std_lim,self.std_med) #JO HIER TRAIN MITGEEBEN        
-        good_data = util.remove_artifacts(curr_data, self.bad_indices['Artifacts'])
-        if train: #if it's train data, then get its mean and std for standardization
-            self.std = np.std(good_data,axis=1)
-            self.mean = np.mean(good_data,axis=1)
-        data_scal = util.standardize(good_data, self.std, self.mean)
-        princ_components = self._setup_PCA(data_scal.T, train = train, expl_variance = expl_variance)
-        print('this is how the principal components look like, shapewise', princ_components.shape,'this is before',data_scal.shape)
-        return princ_components
-    
     """
     Function to return the bad indices found by filtering. Important: First filter out the nan indices, then the artifacts!
     Order is important
@@ -187,57 +110,41 @@ class Feature_generator:
     def get_bad_indices(self):
         return self.bad_indices
         
-        
+
+
+# def filter_common_channels(common_df):
+#     good_idx = util.find_common_channels(common_df[['Day','GoodChans']])
+#     for idx,day in enumerate(good_idx['Day']):
+#         good = good_idx.loc[good_idx['Day']==day,'CommonChans'][idx]
+#         new_data = common_df[common_df['Day']==day]['BinnedData'][idx][good,:]
+#         common_df.loc[common_df['Day']==day,'BinnedData'] = [new_data]
+#         spraa = common_df.loc[common_df['Day']==day,'GoodChans'][idx][good]
+#         common_df.loc[common_df['Day']==day,'GoodChans'] = [spraa]
+#     return common_df
 
 
 # In[ ]:
 
 
-# pecog=Feature_generator('/data2/users/stepeter/Preprocessing/processed_cb46fd46_4.h5',prefiltered=False,wsize=100)
-# mecog = Feature_generator('/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_4.h5', prefiltered =False, wsize =100)
-# for p in range(pecog.pca.n_components):
-#     plt.plot(wut[:,p])
-# plt.xlabel('Time (in w_size)')
-# plt.ylabel('PC Value')
-# plt.title('First %d principal components' % pecog.pca.n_components)
-# plt.show()
-
-# pecog.vis_raw_data(0,30000,range(20))
-
-# #pecog.vis_raw_data(idx[0]-5,idx[1]+5)
-# #pecog.vbis_raw_data(0,idx[1]+400)
-# pecog.vis_welch_data(0,30000)
+# days = [3,4]
+# all_days_df = pd.DataFrame(columns = ['Patient','Day','BinnedData','BinnedLabels', 'GoodChans'], index=range(len(days)))
+# for enum,day in enumerate(days):
+#     print(day,'this day')
+#     ####for testing
+#     labels = np.arange(day,10)[:,None]
+#     features = np.tile(np.arange(day,10)[None,:],(3,1)).astype('float')
+#     features[:,2]=np.nan
+#     print(features)
+#     good_chans = np.array(['yes'+str(day),'mes','tes'])
+#     curr_ret = ['test', day, features,labels,good_chans]      
+#     all_days_df.loc[enum] = curr_ret
 
 
-
-# good_data=pecog.calc_data_mat(idx[1]+100,idx[1]+400)
-# pecog.pca.fit(good_data)
-# good_data_trafo=pecog.pca.transform(good_data)
-# print(good_data_trafo.shape)
-# print(good_data.shape)
+# In[ ]:
 
 
-# print(good_data.shape)
-# print(good_data_trafo.shape)
-
-# comps=pecog.pca.components_
-# print(pecog.raw.info['ch_names'][28])
-# print(comps.shape)
-# comps=comps.reshape((127,-1,2))
-# print(np.argmax(comps[:,:,1],axis=1))
-# #plt.plot(comps[5:,5:,0].T)
-# plt.plot(comps[:,:,1].T)
-# plt.ylim(-0.005,0.005)
-
-# print(len(pecog.raw.info['chs']))
-
-# #print(data_trafo)
-# plt.plot(good_data_trafo[:,0])
-# plt.plot(good_data_trafo[:,1])
-# #plt.xlim(-0.00001,0.00001)
-# #plt.ylim(-0.00001,0.00001)
-
-# #max(data_trafo[:,1])-min(data_trafo[:,1])
+# gen = Feature_generator(all_days_df)
+# gen.generate_features(wsize =1)
 
 
 # In[ ]:

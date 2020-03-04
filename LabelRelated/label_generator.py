@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
 
 
-# In[4]:
+# In[ ]:
 
 
 """
@@ -92,13 +92,13 @@ class Label_generator:
         return curr_data, ratio
 
 
-# In[3]:
+# In[ ]:
 
 
 # import pandas as pd
 
 
-# In[5]:
+# In[ ]:
 
 
 # days = [3,4]
@@ -115,7 +115,7 @@ class Label_generator:
 #     all_days_df.loc[enum] = curr_ret
 
 
-# In[74]:
+# In[ ]:
 
 
 # import pandas as pd
