@@ -24,9 +24,6 @@ class Preprocessor:
     Input: Data, start and end in sample no. (not! seconds)
     """
     def __init__(self,data,chan_info,start_sample,end_sample):
-        self.data=data
-        self.start=start_sample
-        self.end=end_sample
         self.df=data['dataset'][:,start_sample:end_sample]
         self.bad_chans=~(np.array([chan_info[c]['goodChanInds'] for c in chan_info.columns]).astype('bool'))
         
