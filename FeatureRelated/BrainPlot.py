@@ -1,7 +1,13 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
+
+
+get_ipython().system('pip list')
+
+
+# In[2]:
 
 
 import supereeg as se
@@ -68,7 +74,7 @@ def plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,chan_label
     
     #Create dataframe for electrode locations
     locs=mni_file.loc[mni_file['Electrode'].isin(chan_labels)][['X coor', 'Y coor', 'Z coor']]
-
+    print(locs.shape)
     
     #Label strips/depths differently for easier visualization (or use defined color list)
     if len(colors)==0:
@@ -120,12 +126,12 @@ def plot_ecog_electrodes_mni_direct(mni_coords,num_grid_chans=64,colors=list()):
                            node_size=10, node_color=colors)
 
 
-# In[ ]:
+# In[4]:
 
 
 # import sys
 # sys.path.append('/home/stepeter/AJILE/stepeter_sandbox/ECoG_Preprocessing')
 
-# mni_coords_fullfile='/data2/users/stepeter/mni_coords/a0f66459/a0f66459_MNI_atlasRegions.xlsx'
-# plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,chan_labels=['GRID1', 'GRID2'], num_grid_chans=64)
+mni_coords_fullfile='/data2/users/stepeter/mni_coords/cb46fd46/cb46fd46_MNI_atlasRegions.xlsx'
+plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,chan_labels=['GRID1','GRID16'], num_grid_chans=64, colors=[10,2])
 

@@ -85,7 +85,6 @@ class Feature_generator:
     
     def generate_features(self, wsize = 100, sliding_window=False):
         #here, check how many days we need for the requested datasize
-        time_passed = 0
         curr_data = None
         for day in self.df['Day']:
             print('Day', day)

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[5]:
 
 
 import numpy as np
 
 
-# In[ ]:
+# In[6]:
 
 
 """
@@ -76,7 +76,6 @@ class Label_generator:
     
     
     def generate_labels(self, wsize = 100, sliding_window =0, method='ratio'):
-        time_passed = 0
         curr_data = None
         ratio = None
         for day in self.df['Day']:
@@ -92,27 +91,37 @@ class Label_generator:
         return curr_data, ratio
 
 
-# In[ ]:
+# In[7]:
 
 
-# import pandas as pd
+import pandas as pd
 
 
-# In[ ]:
+# In[21]:
 
 
-# days = [3,4]
-# all_days_df = pd.DataFrame(columns = ['Patient','Day','BinnedData','BinnedLabels', 'GoodChans'], index=range(len(days)))
-# for enum,day in enumerate(days):
-#     print(day,'this day')
-#     ####for testing
-#     labels = np.arange(day,10)[:,None]
-#     features = np.tile(np.arange(day,10)[None,:],(3,1)).astype('float')
-#     features[:,2]=np.nan
-#     print(features)
-#     good_chans = np.array(['yes'+str(day),'mes','tes'])
-#     curr_ret = ['test', day, features,labels,good_chans]      
-#     all_days_df.loc[enum] = curr_ret
+days = [3,4]
+all_days_df = pd.DataFrame(columns = ['Patient','Day','BinnedData','BinnedLabels', 'GoodChans'], index=range(len(days)))
+for enum,day in enumerate(days):
+    print(day,'this day')
+    ####for testing
+    labels = np.arange(day*2,10*2)[:,None]
+    features = np.tile(np.arange(day*2,10*2)[None,:],(3,1)).astype('float')
+    features[:,2]=np.nan
+    print(labels)
+    good_chans = np.array(['yes'+str(day),'mes','tes'])
+    curr_ret = ['test', day, features,labels,good_chans]      
+    all_days_df.loc[enum] = curr_ret
+
+gen = Label_generator(all_days_df)
+
+# print(all_days_df['Day'])
+
+
+# In[22]:
+
+
+gen.generate_labels(wsize =1)
 
 
 # In[ ]:

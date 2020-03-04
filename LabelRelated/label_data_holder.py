@@ -90,7 +90,6 @@ class LabelDataHolder:
         #bin s.t. each column is one sec.
         end=labels.shape[0]//self.fps
         ret = labels[:self.fps*end].reshape(-1,self.fps)
-        print('this was supposed to be the end {} this is what it wants to go to {} and this is the end length {}'.format(self.end,end,ret.shape[0]))
         return ret
     
     def get_pred_bin(self):

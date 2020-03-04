@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[6]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('load_ext', 'autoreload')
 get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[7]:
+# In[ ]:
 
 
 from FeatureRelated.feature_generator import Feature_generator
@@ -26,7 +26,7 @@ import multiprocessing as mp
 from data_processing import process
 
 
-# In[8]:
+# In[5]:
 
 
 """
@@ -111,13 +111,17 @@ class DataProvider:
     
     
     
-    def get_data(self, configs, shuffle_data = False):
+    def get_data(self, configs, shuffle_data = False, reload = False):
         #if data already exists, simply reload
-        try:
-            x_tr,y_tr,x_ev, y_ev = dutil.load_data_from_file(configs)
-            print('Loading Data from File..done')
-        except FileNotFoundError: #file doesn't exist
-            print('Data not on file yet. Loading raw data into memory...')
+        if reload:
+            try:
+                x_tr,y_tr,x_ev, y_ev = dutil.load_data_from_file(configs)
+                print('Loading Data from File..done')
+            except FileNotFoundError: #file doesn't exist
+                print('Data not on File.')
+                return
+        else:
+            print(' Loading raw data into memory...')
             if not self.is_loaded:
                 self._load_raws(configs['patient'],configs['days'])
             print('And creating the data..')
@@ -134,7 +138,7 @@ class DataProvider:
         
 
 
-# In[9]:
+# In[ ]:
 
 
 # provider = DataProvider()
@@ -159,87 +163,87 @@ class DataProvider:
 # muell = provider.get_data(configs)
 
 
-# In[10]:
+# In[ ]:
 
 
-# provider = DataProvider()
+provider = DataProvider()
 
-# patient = 'cb46fd46'
-# days = [3,4,5,6,7]
-# wsize = 100
-# sliding = 25
-# expvar = 90
-# ratio = .8
-# shuffle = False
-# configs =dict()
-# configs['patient']=patient
-# configs['days']=days
-# configs['wsize']=wsize
-# configs['sliding']=sliding
-# configs['expvar'] = expvar
-# configs['ratio'] = ratio
-# configs['shuffle']= shuffle
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
-
-
-# wsize = 50
-# sliding = False
-
-# configs['wsize']=wsize
-# configs['sliding']=sliding
-
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
+patient = 'cb46fd46'
+days = [3,4,5,6,7]
+wsize = 100
+sliding = 25
+expvar = 90
+ratio = .8
+shuffle = False
+configs =dict()
+configs['patient']=patient
+configs['days']=days
+configs['wsize']=wsize
+configs['sliding']=sliding
+configs['expvar'] = expvar
+configs['ratio'] = ratio
+configs['shuffle']= shuffle
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
 
 
-# shuffle = True
+wsize = 50
+sliding = False
 
-# configs['shuffle']=shuffle
+configs['wsize']=wsize
+configs['sliding']=sliding
 
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
-
-
-# wsize = 100
-# shuffle = False
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
 
 
-# configs['wsize']=wsize
-# configs['shuffle']=shuffle
+shuffle = True
 
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
+configs['shuffle']=shuffle
 
-
-# shuffle = True
-# configs['shuffle']=shuffle
-
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
 
 
-# wsize = 5
-# shuffle = False
+wsize = 100
+shuffle = False
 
-# configs['wsize']=wsize
-# configs['shuffle']=shuffle
 
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
+configs['wsize']=wsize
+configs['shuffle']=shuffle
 
-# shuffle = True
-# configs['shuffle']=shuffle
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
 
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
-# del(provider)
-# del(muell)
+
+shuffle = True
+configs['shuffle']=shuffle
+
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
+
+
+wsize = 5
+shuffle = False
+
+configs['wsize']=wsize
+configs['shuffle']=shuffle
+
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
+
+shuffle = True
+configs['shuffle']=shuffle
+
+print('los')
+#provider.reload_generators()
+muell = provider.get_data(configs)
+del(provider)
+del(muell)
 
