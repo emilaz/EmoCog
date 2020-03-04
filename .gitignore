@@ -4,3 +4,8 @@
 /vis/.ipynb_checkpoints/
 /Classifications/.ipynb_checkpoints/
 /.ipynb_checkpoints/
+/data/
+/deprecated/
+/vis/*.ipynb
+/util/*.ipynb
+.idea
