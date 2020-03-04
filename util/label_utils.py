@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
 import pandas as pd
 import os
@@ -11,16 +5,6 @@ import datetime
 from util.sync_utils import in_seconds
 
 
-# In[4]:
-
-
-#%load_ext pycodestyle_magic
-
-
-# In[5]:
-
-
-#%%pycodestyle
 """
 Converts strings into int/np.nan. Necessary for if looking at annotations in dataframe
 Input: Data
@@ -118,10 +102,3 @@ def fill_frames(actual_labels,supposed_no_labels):
         positions = sorted(np.random.choice(supposed_no_labels,no_labels,replace=False)) #which positions do we want to fill?
     places[positions] = actual_labels
     return places 
-
-
-# In[ ]:
-
-
-
-

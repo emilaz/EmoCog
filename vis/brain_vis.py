@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[7]:
-
 
 import numpy as np
 import pandas as pd
@@ -15,8 +10,6 @@ import sys
 sys.path.append('..')
 from util.analysis_utils import get_important_electrodes_bins_goodchans
 
-
-# In[10]:
 
 
 def plot_all(configs):

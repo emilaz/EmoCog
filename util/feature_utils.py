@@ -1,16 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[4]:
-
-
 import numpy as np
 import pandas as pd
 from functools import reduce
 from sklearn.decomposition import PCA
-
-
-# In[5]:
 
 
 
@@ -145,14 +136,4 @@ def filter_common_channels(common_df, additional_channels = None):
         spraa = common_df.loc[common_df['Day']==day,'GoodChans'][idx][good]
         common_df.loc[common_df['Day']==day,'GoodChans'] = [spraa]
     return common_df
-
-
-# In[23]:
-
-
-# df = pd.DataFrame(columns = ['Day','GoodChans', 'BinnedData'])
-# df.loc[0] = [0,np.array(['a','b','c']), np.arange(27).reshape(3,3,3)]
-# df.loc[1] = [1,np.array(['a','c','d']), np.arange(27).reshape(3,3,3)]
-l = find_common_channels([['a','b']][0], None)
-l.size
 

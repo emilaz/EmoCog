@@ -1,26 +1,8 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import pandas as pd
 import numpy as np
 import os
 import ast
 import pickle
-
-
-# In[7]:
-
-
-for x in [3]:
-print(x)
-
-
-# In[2]:
-
-
 
 """
 Generates a filename out of the configs
@@ -193,4 +175,3 @@ def load_classifier(configs,methodtype):
     with open(link, "rb") as f:
          classifier_stuff = pickle.load(f)
     return classifier_stuff['classifier'], classifier_stuff['threshold']
-

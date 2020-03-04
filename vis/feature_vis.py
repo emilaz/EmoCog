@@ -1,16 +1,8 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.widgets import Slider
-
-
-# In[ ]:
 
 
 def plot_raw_data(data,chans=None,bad_coords= []):

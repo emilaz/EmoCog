@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[4]:
-
-
 import sys
 sys.path.append('..')
 import matplotlib.pyplot as plt
@@ -18,10 +12,6 @@ from scipy import interp
 
 import pandas as pd
 import numpy as np
-
-
-# In[124]:
-
 
 def bar_plot_svc(scores_tr,scores_ev,gammas,thresholds = None):
     bar_width = 0.35
@@ -278,38 +268,3 @@ def happy_ratio_random(df):
     plt.ylabel('Counts')
     plt.xlabel('Datset')
     plt.show()
-
-
-# In[133]:
-
-
-# df = pd.DataFrame(columns =['y','y_ev'])
-# for i in range(15):
-#     df.loc[i] = [np.random.choice(2,100), np.random.choice(2,20)]
-
-
-# # happy_ratio_random(df)
-
-# new_df = pd.DataFrame(columns = ['Happy', 'Train', 'Test'])
-
-# for idx, row in df.iterrows():
-#     new_df.loc[2*idx] = [True,np.sum(row['y']),np.sum(row['y_ev'])]
-#     new_df.loc[2*idx+1] = [False,len(row['y'])-np.sum(row['y']),len(row['y_ev'])-np.sum(row['y_ev'])]
-
-# llel = new_df.melt(id_vars = 'Happy',value_vars = ['Train','Test'])
-
-# llel['value'] = llel['value'].astype('int')
-# llel['Happy'] = llel['Happy'].astype('bool')
-
-# sns.set()
-
-# sns.violinplot(x='variable',data=llel,y='value',hue='Happy', hue_order = [True,False], order = ['Test','Train'],split=True, palette = {True:'blue', False:'red'})
-# plt.title('Violin Plot of Happy/Not Happy distribution')
-# plt.ylabel('Counts')
-
-
-
-# # llel = df.melt(value_vars =['Train Count Happy',  'Train Count Not Happy', 'Test Count Happy', 'Test Count Not Happy'])
-
-# # sns.violinplot(data = llel, x = 'variable', y='value')
-

@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
 
 from Evals import get_f1, get_precision_recall, get_f1_from_pr
 from sklearn.metrics import roc_curve, precision_recall_curve, fbeta_score, roc_auc_score, average_precision_score
@@ -11,7 +6,6 @@ import pandas as pd
 import numpy as np
 
 
-# In[ ]:
 
 
 
@@ -83,15 +77,15 @@ NOTE: What is c,g here??
 Fills a pd dataframe after a) finding the optimal threshold for a train set, predicting on train and test set and then calculating scores
 Input: Dataframe df, dataframe row to fill, Classifier to use, sklearn CV, train data, test data.
 """
-def fit_predict_eval_fill(df,idx,classifier,cv,x,y,x_ev,y_ev):
-    thresh = get_optimal_threshold(classifier, cv, x, y) # get threshold using cv
-    y_pred,y_pred_ev = fit_predict(classifier, x, y, x_ev, y_ev, thresh) # using that threshold, get predictions and f1 score
-    f1_tr=get_f1(y_pred,y) # calculate f1 scores for prediction on train set
-    f1_ev=get_f1(y_pred_ev,y_ev)
-    prec_tr,recall_tr = get_precision_recall(y_pred,y)
-    prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
-    results_df.loc[idx] = [c,g,thresh,f1_tr,prec_tr,recall_tr,f1_ev,prec_ev,recall_ev]
-
+# def fit_predict_eval_fill(df,idx,classifier,cv,x,y,x_ev,y_ev):
+#     thresh = get_optimal_threshold(classifier, cv, x, y) # get threshold using cv
+#     y_pred,y_pred_ev = fit_predict(classifier, x, y, x_ev, y_ev, thresh) # using that threshold, get predictions and f1 score
+#     f1_tr=get_f1(y_pred,y) # calculate f1 scores for prediction on train set
+#     f1_ev=get_f1(y_pred_ev,y_ev)
+#     prec_tr,recall_tr = get_precision_recall(y_pred,y)
+#     prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
+#     results_df.loc[idx] = [c,g,thresh,f1_tr,prec_tr,recall_tr,f1_ev,prec_ev,recall_ev]
+#
 
 
 """

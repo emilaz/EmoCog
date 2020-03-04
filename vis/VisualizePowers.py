@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[11]:
 
 
 #Load in resampled, processed data and compute power spectra for each day
@@ -95,29 +91,3 @@ for patient_code in ['cb46fd46']:
         #return_code = subprocess.call('ffmpeg -i '+saveDir+'PowerSpec_'+patient_code+'_day'+str(day)+'_bin_%d.png -vcodec mpeg4 '+saveDir+'specVid.mp4', shell=True) 
         return_code = subprocess.call('ffmpeg -i '+saveDir+'testPowerSpec_'+patient_code+'_day'+str(day)+'_bin_%d.png -vcodec mpeg4 '+vidlink, shell=True) 
         # !ffmpeg -i /data2/users/stepeter/Preprocessing/powSpecTest/PowerSpec_a0f66459_day3_bin_%d.png -vcodec mpeg4 /data2/users/stepeter/Preprocessing/powSpecTest/test.mp4
-
-
-# In[16]:
-
-
-np.random.seed(5)
-lel = np.random.normal(1,4,(3,2))
-
-
-# In[17]:
-
-
-mel = np.random.normal(1,4,(3,2))
-
-
-# In[19]:
-
-
-lel
-
-
-# In[20]:
-
-
-mel
-
