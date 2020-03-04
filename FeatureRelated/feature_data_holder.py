@@ -1,22 +1,11 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# In[ ]:
-
-
-get_ipython().run_line_magic('matplotlib', 'notebook')
 import sys
 sys.path.append('..')
 import h5py
 from .simple_edf_preprocessing import Preprocessor
-from Vis import FeatureVis
 import numpy as np
 import pandas as pd
-get_ipython().run_line_magic('matplotlib', 'notebook')
-from functools import reduce
 
-
-# In[ ]:
 
 
 """

@@ -1,32 +1,12 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
-
-
-# In[ ]:
-
-
 from FeatureRelated.feature_generator import Feature_generator
 from LabelRelated.label_generator import Label_generator 
 from FeatureRelated.feature_data_holder import FeatDataHolder
 from LabelRelated.label_data_holder import LabelDataHolder
-import numpy as np
 import pandas as pd
-from Vis import LabelVis, ClassificationVis
 import util.data_utils as dutil
 import util.label_utils as lutil
-import util.feature_utils as futil
 import util.sync_utils as sutil
-import multiprocessing as mp
 from data_processing import process
-
-
-# In[5]:
 
 
 """
@@ -135,115 +115,89 @@ class DataProvider:
             y_tr = lutil.do_cutoff(y_tr, cutoff)
             y_ev = lutil.do_cutoff(y_ev, cutoff)
         return x_tr, y_tr, x_ev, y_ev
-        
 
 
-# In[ ]:
+#TODO das hier muss wahrsch. modifiziert werden jetzt wo es als python file rennen soll
+if __name__ == 'main':
+
+    provider = DataProvider()
+
+    patient = 'cb46fd46'
+    days = [3,4,5,6,7]
+    wsize = 100
+    sliding = 25
+    expvar = 90
+    ratio = .8
+    shuffle = False
+    configs =dict()
+    configs['patient']=patient
+    configs['days']=days
+    configs['wsize']=wsize
+    configs['sliding']=sliding
+    configs['expvar'] = expvar
+    configs['ratio'] = ratio
+    configs['shuffle']= shuffle
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
 
 
-# provider = DataProvider()
+    wsize = 50
+    sliding = False
 
-# patient = 'cb46fd46'
-# days = [7]
-# wsize = 100
-# sliding = 25
-# expvar = 90
-# ratio = .8
-# shuffle = False
-# configs =dict()
-# configs['patient']=patient
-# configs['days']=days
-# configs['wsize']=wsize
-# configs['sliding']=sliding
-# configs['expvar'] = expvar
-# configs['ratio'] = ratio
-# configs['shuffle']= shuffle
-# print('los')
-# #provider.reload_generators()
-# muell = provider.get_data(configs)
+    configs['wsize']=wsize
+    configs['sliding']=sliding
+
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
 
 
-# In[ ]:
+    shuffle = True
+
+    configs['shuffle']=shuffle
+
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
 
 
-provider = DataProvider()
-
-patient = 'cb46fd46'
-days = [3,4,5,6,7]
-wsize = 100
-sliding = 25
-expvar = 90
-ratio = .8
-shuffle = False
-configs =dict()
-configs['patient']=patient
-configs['days']=days
-configs['wsize']=wsize
-configs['sliding']=sliding
-configs['expvar'] = expvar
-configs['ratio'] = ratio
-configs['shuffle']= shuffle
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
+    wsize = 100
+    shuffle = False
 
 
-wsize = 50
-sliding = False
+    configs['wsize']=wsize
+    configs['shuffle']=shuffle
 
-configs['wsize']=wsize
-configs['sliding']=sliding
-
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
 
 
-shuffle = True
+    shuffle = True
+    configs['shuffle']=shuffle
 
-configs['shuffle']=shuffle
-
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
-
-
-wsize = 100
-shuffle = False
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
 
 
-configs['wsize']=wsize
-configs['shuffle']=shuffle
+    wsize = 5
+    shuffle = False
 
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
+    configs['wsize']=wsize
+    configs['shuffle']=shuffle
 
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
 
-shuffle = True
-configs['shuffle']=shuffle
+    shuffle = True
+    configs['shuffle']=shuffle
 
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
-
-
-wsize = 5
-shuffle = False
-
-configs['wsize']=wsize
-configs['shuffle']=shuffle
-
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
-
-shuffle = True
-configs['shuffle']=shuffle
-
-print('los')
-#provider.reload_generators()
-muell = provider.get_data(configs)
-del(provider)
-del(muell)
+    print('los')
+    #provider.reload_generators()
+    muell = provider.get_data(configs)
+    del(provider)
+    del(muell)
 

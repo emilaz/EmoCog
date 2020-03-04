@@ -1,45 +1,22 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[2]:
-
-
 import sys
 sys.path.append('..')
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 import os
 
-from Vis import ClassificationVis, LabelVis
 from Evals import *
 from Data_Provider import *
 import util.classification_utils as util
 import util.data_utils as dutil
-import util.label_utils as lutil
 
 import numpy as np
-from scipy import interp
 import matplotlib.pyplot as plt
 
-from sklearn import svm, datasets
+from sklearn import svm
 from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier
 
 
 from itertools import product
-from multiprocessing import Pool
 
 
-# In[3]:
 
 
 #Run classifier with cross-validation and plot ROC curves
@@ -113,34 +90,3 @@ def randomize_labels(y):
     ret[:]=0
     ret[fill_ones]=1
     return ret
-
-
-# In[4]:
-
-
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[ ]:
-
-
-files = [f for f in os.listdir('/home/emil/OpenMindv2/data/postprocessing')]
-print(files)
-shuff=False
-#cuts = [.1,.2,.4]
-cuts = [.1,.2,.3]
-all_elements = [files,cuts,[shuff]]
-file_cut_combos = []
-for allel in product(*all_elements):
-    file_cut_combos+=[allel]
-print(file_cut_combos)    
-pool = mp.Pool(8)
-#yass = pool.starmap(self.load_raws_single_day,list(zip([patient]*len(days),days)))
-yass = pool.starmap(do_all,file_cut_combos)
-
-
-# In[ ]:
-
-
-
-
