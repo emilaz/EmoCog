@@ -118,7 +118,7 @@ class DataProvider:
 
 
 #TODO das hier muss wahrsch. modifiziert werden jetzt wo es als python file rennen soll
-if __name__ == 'main':
+if __name__ == '__main__':
 
     provider = DataProvider()
 
