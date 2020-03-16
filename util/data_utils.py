@@ -59,7 +59,7 @@ Output: None
 """
 def save_data_to_file(x, y, x_ev, y_ev, configs):
     fname = generate_filename(configs, False)
-    link = os.path.join('/home/emil/OpenMindv2/data/postprocessing/',fname)
+    link = os.path.join('/home/emil/OpenMindv2/data/new_labels/',fname)
     #save stuff to file:
     df = pd.DataFrame(data=[[x, y, x_ev, y_ev]],columns=['x_tr','y_tr','x_ev','y_ev'])
     df.to_hdf(link,key='df')
@@ -72,7 +72,7 @@ Output: Train and test data according to these configs
 """
 def load_data_from_file(configs):
     fname = generate_filename(configs,False)
-    link = os.path.join('/home/emil/OpenMindv2/data/postprocessing/',fname)
+    link = os.path.join('/home/emil/OpenMindv2/data/new_labels/',fname)
     print(link)
     df = pd.read_hdf(link)
     x = df['x_tr'][0]
@@ -104,9 +104,9 @@ Output: None
 """
 def save_results(df, configs,methodtype):
     fname = generate_filename(configs)
-    if not os.path.exists('/home/emil/OpenMindv2/data/results/postprocessing/'+methodtype):
-        os.mkdir('/home/emil/OpenMindv2/data/results/postprocessing/'+methodtype)
-    link = os.path.join('/home/emil/OpenMindv2/data/results/postprocessing/',methodtype,fname)
+    if not os.path.exists('/home/emil/OpenMindv2/data/results/new_labels/'+methodtype):
+        os.mkdir('/home/emil/OpenMindv2/data/results/new_labels/'+methodtype)
+    link = os.path.join('/home/emil/OpenMindv2/data/results/new_labels/',methodtype,fname)
     df.to_hdf(link,key='df')
 
     
@@ -117,7 +117,7 @@ Output: Dataframe with results
 """
 def load_results(configs,methodtype):
     fname = generate_filename(configs)
-    link = os.path.join('/home/emil/OpenMindv2/data/results/postprocessing/',methodtype,fname)
+    link = os.path.join('/home/emil/OpenMindv2/data/results/new_labels/',methodtype,fname)
     df = pd.read_hdf(link)
     return df
 
@@ -129,9 +129,9 @@ Output: None
 """
 def save_processing_tools(pca, artifact_paras, standard_paras, good_chans, configs):
     fname = generate_filename(configs)+'.pkl'
-    if not os.path.exists('/home/emil/OpenMindv2/data/pca_models/postprocessing/'):
-        os.mkdir('/home/emil/OpenMindv2/data/pca_models/postprocessing/')
-    link = os.path.join('/home/emil/OpenMindv2/data/pca_models/postprocessing/',fname)
+    if not os.path.exists('/home/emil/OpenMindv2/data/pca_models/new_labels/'):
+        os.mkdir('/home/emil/OpenMindv2/data/pca_models/new_labels/')
+    link = os.path.join('/home/emil/OpenMindv2/data/pca_models/new_labels/',fname)
     tools ={'Model':pca, 'Artifact Parameter':artifact_paras, 'Standardization Parameter':standard_paras, 'GoodChans':good_chans}
     with open(link, "wb") as f:
          pickle.dump(tools, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -144,7 +144,7 @@ Output: Trained PCA model, artifact parameter, standardization parameter
 """
 def load_processing_tools(configs):
     fname = generate_filename(configs,False)+'.pkl'
-    link = os.path.join('/home/emil/OpenMindv2/data/pca_models/postprocessing/',fname)
+    link = os.path.join('/home/emil/OpenMindv2/data/pca_models/new_labels/',fname)
     with open(link, "rb") as f:
          tools = pickle.load(f)
     return tools
@@ -157,9 +157,9 @@ Output: None
 """
 def save_classifier(classifier, best_thr, configs, methodtype):
     fname = generate_filename(configs)+'.pkl'
-    if not os.path.exists('/home/emil/OpenMindv2/data/classifier/postprocessing/'+methodtype):
-        os.mkdir('/home/emil/OpenMindv2/data/classifier/postprocessing/'+methodtype)
-    link = os.path.join('/home/emil/OpenMindv2/data/classifier/postprocessing/',methodtype,fname)
+    if not os.path.exists('/home/emil/OpenMindv2/data/classifier/new_labels/'+methodtype):
+        os.mkdir('/home/emil/OpenMindv2/data/classifier/new_labels/'+methodtype)
+    link = os.path.join('/home/emil/OpenMindv2/data/classifier/new_labels/',methodtype,fname)
     classifier_stuff = {'classifier':classifier, 'threshold':best_thr}
     with open(link, "wb") as f:
          pickle.dump(classifier_stuff, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -171,7 +171,7 @@ Output: Classifier with results
 """
 def load_classifier(configs,methodtype):
     fname = generate_filename(configs)+'.pkl'
-    link = os.path.join('/home/emil/OpenMindv2/data/classifier/postprocessing/',methodtype,fname)
+    link = os.path.join('/home/emil/OpenMindv2/data/classifier/new_labels/',methodtype,fname)
     with open(link, "rb") as f:
          classifier_stuff = pickle.load(f)
     return classifier_stuff['classifier'], classifier_stuff['threshold']

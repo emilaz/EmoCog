@@ -65,7 +65,7 @@ Output: Number of frames between
 
 
 def find_number_frames(df, vid, last_vid):
-    time_vid = df[df['vid'] == vid]['steve_time'].iloc[0]
+    time_vid = df[df['video'] == vid]['steve_time'].iloc[0]
     time_vid_secs = in_seconds(time_vid)
     next_vid = vid
     while True:
@@ -73,7 +73,7 @@ def find_number_frames(df, vid, last_vid):
         len_vid = len(next_vid)
         next_vid = '0'*(4-len_vid)+next_vid
         try:
-            time_next_vid = df[df['vid']==next_vid]['steve_time'].iloc[0]
+            time_next_vid = df[df['video']==next_vid]['steve_time'].iloc[0]
             time_next_vid_secs = in_seconds(time_next_vid)
             elapsed = (time_next_vid_secs-time_vid_secs)
             break

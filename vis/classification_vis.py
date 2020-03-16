@@ -137,7 +137,7 @@ def print_results(df_res):
                M=df_res.max().max(),
                low=0,
                high=1)
-    display(pretty)
+    print(pretty)
     
     
     

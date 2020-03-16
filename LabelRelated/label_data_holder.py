@@ -22,7 +22,7 @@ class LabelDataHolder:
     Init function. Loads data in given start-end window and bins the data.
     Input: Path to label file, start and end point (in seconds) of labels wanted, type of label wanted (predicted vs. annotated)
     """
-    def __init__(self, path, start, end, col = 'Happy_predicted'):
+    def __init__(self, path, start, end, col = 'Happy'):
         if path.endswith('.csv'):
             self.df = pd.read_csv(path, error_bad_lines=False, low_memory=False)
         elif path.endswith('.hdf'):
@@ -60,19 +60,18 @@ class LabelDataHolder:
         for sess in sess_nos:
             print('next sess', sess)
             curr_sess = self.df[self.df['session'] == sess]
-            vid_nos = sorted(curr_sess['vid'].unique())
+            vid_nos = sorted(curr_sess['video'].unique())
             last_vid = vid_nos[-1]
             for vid in vid_nos:
-                actual_frames = curr_sess[curr_sess['vid']==vid][col].values #actual frames saved in hdf from gautham
+                # actual frames saved in hdf (as opposed to supposed no. frames
+                actual_frames = curr_sess[curr_sess['video']==vid][col].values
+                # wherever success = 0, we want to put nans. we don't know anything there
+                success = curr_sess[curr_sess['success']==vid][col].values
+                actual_frames[success==0] = np.nan
                 if col == 'annotated': #the annotated labels are strings. Convert here.
                     actual_frames = util.convert_labels_readable(actual_frames)
                 start, supposed_no_frames = util.find_number_frames(curr_sess,vid, last_vid) #how many frames does the video actually have?
-#                 if np.any(~np.isnan(actual_frames)):
-#                     print('video {},we start filling at {}, meaning {}s, and fill till {},meaning {}s'.format(vid,start,start/30,start+supposed_no_frames,(start+supposed_no_frames)/30))
-#                     print('first frame with not nan {}, which from start is {}, in secs {}'.format(np.argmax(~np.isnan(actual_frames)),(start+np.argmax(~np.isnan(actual_frames))),(start+np.argmax(~np.isnan(actual_frames)))/30))
                 ret = util.fill_frames(actual_frames,supposed_no_frames) #fill the frames
-#                 if np.any(~np.isnan(actual_frames)):
-#                     print('after shuffling around, this goes to {}'.format(np.argmax(~np.isnan(ret))))
                 if(start+supposed_no_frames>len(labels)):
                     ret = ret[:len(labels)-start]
                     print('Omitting part of vid {}/{} because it goes beyond 12AM'.format(vid,last_vid))

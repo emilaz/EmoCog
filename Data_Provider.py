@@ -14,6 +14,8 @@ Class that brings together feature and label side to provide all data needed for
 Synchronizes the data.
 This class is not designed to be used elsewhere. Data should be generated and analysed here, then saved to file using the DataUtil class.
 """
+
+
 class DataProvider:
     """
     Init function. Start and end time are set for a time period I checked manually to be more or less okay.
@@ -25,7 +27,7 @@ class DataProvider:
         self.draw = draw
         self.all_days_df = None
         
-    def _load_raws(self, patient, days): #TODO auf mehrere tage erweitern
+    def _load_raws(self, patient, days):
         if type(days) is int:
             days = [days]
         #this dataframe saves pat,day,st,end,the raw, non-standardized, non-PCA features and corresponding labels
@@ -52,7 +54,7 @@ class DataProvider:
             realtime_end= 23*3600
         print('Day {}, start time is {} , end time is {}'.format(day,realtime_start,realtime_end))
         feat_data = FeatDataHolder(path_ecog,realtime_start, realtime_end)
-        label_data = LabelDataHolder(path_vid,realtime_start,realtime_end, col = 'Happy_predicted' )
+        label_data = LabelDataHolder(path_vid, realtime_start, realtime_end, col = 'Happy')
         ret = [patient, day,realtime_start,realtime_end,feat_data.get_bin_data(),label_data.get_pred_bin(), feat_data.chan_labels]
         del(feat_data)
         del(label_data)
@@ -149,7 +151,6 @@ if __name__ == '__main__':
     configs['sliding']=sliding
 
     print('los')
-    #provider.reload_generators()
     muell = provider.get_data(configs)
 
 
@@ -158,7 +159,6 @@ if __name__ == '__main__':
     configs['shuffle']=shuffle
 
     print('los')
-    #provider.reload_generators()
     muell = provider.get_data(configs)
 
 
@@ -170,7 +170,6 @@ if __name__ == '__main__':
     configs['shuffle']=shuffle
 
     print('los')
-    #provider.reload_generators()
     muell = provider.get_data(configs)
 
 
@@ -178,7 +177,6 @@ if __name__ == '__main__':
     configs['shuffle']=shuffle
 
     print('los')
-    #provider.reload_generators()
     muell = provider.get_data(configs)
 
 
@@ -189,14 +187,12 @@ if __name__ == '__main__':
     configs['shuffle']=shuffle
 
     print('los')
-    #provider.reload_generators()
     muell = provider.get_data(configs)
 
     shuffle = True
     configs['shuffle']=shuffle
 
     print('los')
-    #provider.reload_generators()
     muell = provider.get_data(configs)
     del(provider)
     del(muell)

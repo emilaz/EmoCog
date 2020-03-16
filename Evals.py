@@ -8,6 +8,8 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from sklearn.metrics import f1_score
+import warnings
 
 
 # In[17]:
@@ -58,6 +60,9 @@ def get_f1(pred,true):
         f1 = 0
     else:
         f1 = 2*precision*recall/(precision+recall)
+    sk_ver = f1_score(true,pred)
+    if np.any(sk_ver != f1):
+        raise ArithmeticError('Seems like my method was wrong? Check this')
     return f1
 
 """
@@ -65,9 +70,22 @@ Calculates F1 scores from PR arrays
 Input: Precision array, Recall array
 Output:  F1 array
 """
+
+
 def get_f1_from_pr(precision,recall):
-    f1_arr = 2*precision*recall/np.maximum(np.ones(len(precision)),precision+recall)
-    return f1_arr
+    ret = np.zeros(len(precision))
+    numer = 2*precision*recall
+    denom = precision+recall
+    well_defined = denom != 0 #if precision or recall is zero, we return zero
+    if np.any(well_defined == False):
+        warnings.warn('Precision and Recall were zero for at least one entry.'
+                      'Setting the respective F1 scores to zero.')
+    ret[well_defined]= numer[well_defined]/denom[well_defined]
+    #this is not clean, but servers as sanity check for above method
+    f1_arr = 2*precision*recall/np.maximum(1e-6*np.ones(len(precision)),precision+recall)
+    if not np.all(ret == f1_arr):
+        raise ArithmeticError('Something is wrong in the calculation of the F1 score.')
+    return ret
 
 """
 Calculates Accuracy

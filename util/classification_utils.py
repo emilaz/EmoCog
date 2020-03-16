@@ -1,8 +1,6 @@
 
 from Evals import get_f1, get_precision_recall, get_f1_from_pr
 from sklearn.metrics import roc_curve, precision_recall_curve, fbeta_score, roc_auc_score, average_precision_score
-from sklearn.model_selection import StratifiedKFold
-import pandas as pd
 import numpy as np
 
 

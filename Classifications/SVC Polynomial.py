@@ -121,7 +121,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 # In[ ]:
 
 
-files = [f for f in os.listdir('/home/emil/OpenMindv2/data/postprocessing')]
+files = [f for f in os.listdir('/home/emil/OpenMindv2/data/new_labels')]
 cuts = [.1,.2,.3]
 shuffle =[False] 
 all_elements = [files,cuts,shuffle]

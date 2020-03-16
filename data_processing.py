@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[9]:
-
-
 import numpy as np
 import pandas as pd
 import util.sync_utils as util
@@ -11,8 +5,6 @@ import util.feature_utils as futil
 import util.data_utils as dutil
 from sklearn.decomposition import PCA
 
-
-# In[10]:
 
 
 """
@@ -91,13 +83,6 @@ def process(x,y, bad_indices, good_chans, configs):
     else:
         overlap = 0
 
-
-#     this puts the eval set in the beginning
-#     x_tr = x_clean[:,int((1-configs['ratio'])*y_clean.shape[0])+overlap:]
-#     y_tr = y_clean[int((1-configs['ratio'])*y_clean.shape[0])+overlap:]
-#     x_ev = x_clean[:,:int((1-configs['ratio'])*y_clean.shape[0])]
-#     y_ev = y_clean[:int((1-configs['ratio'])*y_clean.shape[0])]
-
 #     this shuffles things into train and test set
     if configs['shuffle']:
         x_tr,y_tr,x_ev,y_ev = shuffle_data(x_clean, y_clean, configs['ratio'])
@@ -125,10 +110,4 @@ def process(x,y, bad_indices, good_chans, configs):
     #now ready to return/rumble
     return x_tr, y_tr, x_ev, y_ev
     
-
-
-# In[ ]:
-
-
-
 

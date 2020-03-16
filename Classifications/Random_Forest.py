@@ -1,33 +1,22 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# In[1]:
-
-
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
+# get_ipython().run_line_magic('load_ext', 'autoreload')
+# get_ipython().run_line_magic('autoreload', '2')
 
 
-# In[2]:
 
 
 import sys
 sys.path.append('..')
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+
 
 import vis.classification_vis as cvis
 from Evals import *
 from Data_Provider import *
 import util.classification_utils as util
 import util.data_utils as dutil
-import util.label_utils as lutil
 
 
 import numpy as np
-from scipy import interp
-import matplotlib.pyplot as plt
 
 from sklearn import svm, datasets
 from sklearn.model_selection import StratifiedKFold
@@ -36,9 +25,6 @@ import os
 
 from itertools import product
 from multiprocessing import Pool
-
-
-# In[3]:
 
 
 def train_and_save_best_classifier(results,x,y,configs):
@@ -117,9 +103,9 @@ def do_all(file, cut, shuffled=False, random = False, reload= False):
     else:
         res = calc_results_and_save(x,y,configs,shuffled)
     
-    train_and_save_best_classifier(res,x,y,configs)
+    train_and_save_best_classifier(res,x,y,configs) #best classifier is the one with best AUC (PR or ROC)
 
-    res = calc_results_and_save(x,y,shuffled)
+    # res = calc_results_and_save(x,y,shuffled)
 #     #### get best resul on train set
 #     pos = res['AVG PR'].idxmax()
 #     best_row=list(res.loc[pos].values) # get the row with highest ev score
@@ -144,7 +130,7 @@ def randomize_labels(y):
 # In[4]:
 
 
-files = [f for f in os.listdir('/home/emil/OpenMindv2/data/postprocessing') if 'shuffle_True' in f and '3' in f]
+files = [f for f in os.listdir('/home/emil/OpenMindv2/data/new_labels') if 'shuffle_True' in f and '3' in f]
 cuts = [.05,.1,.2,.3]
 # shuffled =[False]
 all_elements = [files,cuts]

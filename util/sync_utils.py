@@ -2,21 +2,19 @@
 import numpy as np
 import pandas as pd
 import os
-from datetime import datetime, time
 
 """
 Given a day, finds the corresponding video file I guess
 """
 #TODO: Check if session is longer than a day
-def find_paths(patient_name,day_no):
+def find_paths(patient_name, day_no):
     #create filename:
     filename = patient_name+'_fullday_'+str(day_no)+'.h5'
     video_filename = patient_name+'_day_'+str(day_no)+'.hdf'
     path = os.path.join('/nas/ecog_project/derived/processed_ecog',patient_name,'full_day_ecog')
     ecog_path = os.path.join(path, filename)
-    video_path = os.path.join('/home/emil/data/hdf_data/by_day/',video_filename)
-#     print(video_path)
-#     print(ecog_path)
+    video_path = os.path.join('/home/emil/data/hdf_data/by_day_new/',video_filename)
+
     #check if file exists
     if not (os.path.exists(ecog_path) and os.path.exists(video_path)):
         FileNotFoundError('Files for day {} do not exist. Check if day or patient name is wrong.'.format(day_no))
@@ -24,7 +22,7 @@ def find_paths(patient_name,day_no):
     return ecog_path, video_path
 
 """
-This function finds out how many seconds into the day the given session start
+This function finds out how many seconds into the day the first session of day started and when it ended
 Input: Path to video session hdf file
 Output: Seconds passed since midnight until video session began"""
 def find_start_and_end_time(vid_path):
@@ -33,7 +31,8 @@ def find_start_and_end_time(vid_path):
     start_time = (store.select('df',stop =1)['steve_time'].iloc[0])
     start_seconds = in_seconds(start_time)
     #now for the end of the video. First, check if still same day
-    nrows = store.get_storer('df').shape[0]    
+    nrows = store.get_storer('df').shape[0]
+    # this is beginning of last video. since we might be going into next day, we won't use the last vid
     end_time = (store.select('df', start = nrows -1, stop = nrows)['steve_time'].iloc[0])
     end_seconds = in_seconds(end_time)
     store.close()
