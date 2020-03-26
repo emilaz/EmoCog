@@ -35,9 +35,9 @@ def calc_results_and_save(x, y, configs, shuff):
     #dataframe for saving results
     results = pd.DataFrame(columns=('Number Estimators','Max Depth','Max Features','AVG PR'))#,'AUC ROC'))
     #do random search on parameters
-    est = np.random.choice(np.arange(130)[5:],50)
-    max_d = np.random.choice(np.arange(60)[1:],50)
-    max_f = np.random.choice(np.arange(min(x.shape))[1:],50)
+    est = np.random.choice(np.arange(130)[5:],25)
+    max_d = np.random.choice(np.arange(60)[1:],25)
+    max_f = np.random.choice(np.arange(min(x.shape))[1:],25)
 
     #Search for best hyperpara combo with cross validation
     for idx,(c,d,f) in enumerate(zip(est,max_d,max_f)):
@@ -59,10 +59,10 @@ def vis_results(x,y, x_ev, y_ev, configs):
     classifier, best_thr = dutil.load_classifier(configs,'RF')
     y_pred = util.get_prediction(classifier,x,best_thr)
     y_pred_ev = util.get_prediction(classifier,x_ev,best_thr)
-    f1_tr=get_f1(y_pred,y) # calculate f1 scores for prediction on train set
-    f1_ev=get_f1(y_pred_ev,y_ev)
-    prec_tr,recall_tr = get_precision_recall(y_pred,y)
-    prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
+    # f1_tr=get_f1(y_pred,y) # calculate f1 scores for prediction on train set
+    # f1_ev=get_f1(y_pred_ev,y_ev)
+    # prec_tr,recall_tr = get_precision_recall(y_pred,y)
+    # prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
 
     # df_res = pd.DataFrame(index =['Train','Eval'],columns = ['Precision','Recall','F1']).astype('float')
     # df_res.loc['Train'] = [prec_tr, recall_tr,f1_tr]
@@ -71,12 +71,10 @@ def vis_results(x,y, x_ev, y_ev, configs):
 
     #draw pretty plots
     title = dutil.generate_filename(configs)
-    cvis.score_heatmap(y_pred, y, 'Metrics '+title+' Train Set')
-    cvis.score_heatmap(y_pred_ev, y, 'Metrics '+title+' Test Set')
-    cvis.conf_mat(y_pred,y, 'Confusion Matrix '+title+' Train Set')
-    cvis.conf_mat_new(y_pred,y, 'Confusion Matrix New'+title+' Train Set')
-    cvis.conf_mat(y_pred_ev,y_ev,'Confusion Matrix '+title+' Test Set')
-    cvis.conf_mat_new(y_pred_ev,y_ev, 'Confusion Matrix New '+title+' Test Set')
+    cvis.score_heatmap(y_pred, y, 'Metrics Train Set '+title)
+    cvis.score_heatmap(y_pred_ev, y_ev, 'Metrics Test Set'+title)
+    cvis.conf_mat(y_pred,y, 'Confusion Matrix Train Set'+title)
+    cvis.conf_mat(y_pred_ev,y_ev,'Confusion Matrix Test Set'+title)
 
     cvis.plot_roc(x,y,classifier, 'Random Forest ROC on Train Set')
     cvis.plot_roc(x_ev,y_ev,classifier,  'Random Forest ROC on Eval Set')
@@ -112,7 +110,7 @@ def randomize_labels(y):
 
 if __name__ == '__main__':
     files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets')]# if 'shuffle_False' in f and '3' in f]
-    cuts = [.05]#,.1,.2,.3]
+    cuts = [.1,.2,.3,.5]
     all_elements = [files,cuts]
 
     file_cut_combos = []

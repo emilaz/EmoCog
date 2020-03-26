@@ -49,24 +49,24 @@ def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
     plt.ylim(0,1)
     plt.show()
 
-def conf_mat(pred,true, title):
-    tp,fp,fn,tn = get_pos_and_negs(pred,true)
-    rates = np.array([tp,fp,fn,tn]).reshape((2,2))
-    df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
-    plt.figure(figsize = (10,7))
-    sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
-    plt.title(title)
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title))
-    plt.show()
+# def conf_mat(pred,true, title):
+#     tp,fp,fn,tn = get_pos_and_negs(pred,true)
+#     rates = np.array([tp,fp,fn,tn]).reshape((2,2))
+#     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
+#     plt.figure(figsize = (10,7))
+#     sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
+#     plt.title(title)
+#     plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
+#     plt.show()
 
-def conf_mat_new(pred, true, title):
+def conf_mat(pred, true, title):
     tn,fp,fn,tp = metrics.confusion_matrix(true, pred).ravel()
     rates = np.array([tp,fp,fn,tn]).reshape((2,2))
     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
     plt.figure(figsize = (10,7))
     sns.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
     plt.title(title)
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title))
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
     plt.show()
 
 
@@ -79,12 +79,12 @@ def score_heatmap(pred, true, title):
     del df['accuracy']
     print(acc)
     df.loc[len(df)] = [np.nan]*2+[acc[0]]
-    df.rename(columns={'macro avg':'Total', 'False':'Not happy', 'True':'Happy'}, index={3:'accuracy'},inplace=True)
+    df.rename(columns={'macro avg':'Total', 0:'Not happy', 1:'Happy'}, index={3:'accuracy'},inplace=True)
     plt.figure(figsize = (10,7))
     sns.heatmap(df.T,annot=True,cmap='Reds', fmt='g', vmin = 0,vmax=1)
     plt.yticks(rotation=0, fontsize="10", va="center")
     plt.title(title)
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title))
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
     plt.show()
 
 

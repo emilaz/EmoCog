@@ -104,9 +104,9 @@ Output: None
 """
 def save_results(df, configs,methodtype):
     fname = generate_filename(configs)
-    if not os.path.exists('/home/emil/EmoCog/data/new_labels/results'+methodtype):
-        os.mkdir('/home/emil/EmoCog/data/new_labels/results'+methodtype)
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/results',methodtype,fname)
+    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/results/',methodtype)):
+        os.mkdir('/home/emil/EmoCog/data/new_labels/results/'+methodtype)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/results/',methodtype,fname)
     df.to_hdf(link,key='df')
 
     
@@ -157,8 +157,8 @@ Output: None
 """
 def save_classifier(classifier, best_thr, configs, methodtype):
     fname = generate_filename(configs)+'.pkl'
-    if not os.path.exists('/home/emil/EmoCog/data/new_labels/classifier'+methodtype):
-        os.mkdir('/home/emil/EmoCog/data/new_labels/classifier'+methodtype)
+    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/classifier',methodtype)):
+        os.mkdir(os.path.join('/home/emil/EmoCog/data/new_labels/classifier',methodtype))
     link = os.path.join('/home/emil/EmoCog/data/new_labels/classifier',methodtype,fname)
     classifier_stuff = {'classifier':classifier, 'threshold':best_thr}
     with open(link, "wb") as f:
