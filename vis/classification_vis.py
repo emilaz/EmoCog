@@ -1,4 +1,8 @@
+import os
 import sys
+
+from sklearn import metrics
+
 sys.path.append('..')
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -45,12 +49,42 @@ def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
     plt.ylim(0,1)
     plt.show()
 
-def conf_mat(pred,true):
+def conf_mat(pred,true, title):
     tp,fp,fn,tn = get_pos_and_negs(pred,true)
     rates = np.array([tp,fp,fn,tn]).reshape((2,2))
     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
     plt.figure(figsize = (10,7))
     sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
+    plt.title(title)
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title))
+    plt.show()
+
+def conf_mat_new(pred, true, title):
+    tn,fp,fn,tp = metrics.confusion_matrix(true, pred).ravel()
+    rates = np.array([tp,fp,fn,tn]).reshape((2,2))
+    df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
+    plt.figure(figsize = (10,7))
+    sns.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
+    plt.title(title)
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title))
+    plt.show()
+
+
+def score_heatmap(pred, true, title):
+    met_dict = metrics.classification_report(true, pred, output_dict=True)
+    df = pd.DataFrame(met_dict)
+    del df['weighted avg']
+    df.drop(index ='support', inplace=True)
+    acc = df['accuracy'].values
+    del df['accuracy']
+    print(acc)
+    df.loc[len(df)] = [np.nan]*2+[acc[0]]
+    df.rename(columns={'macro avg':'Total', 'False':'Not happy', 'True':'Happy'}, index={3:'accuracy'},inplace=True)
+    plt.figure(figsize = (10,7))
+    sns.heatmap(df.T,annot=True,cmap='Reds', fmt='g', vmin = 0,vmax=1)
+    plt.yticks(rotation=0, fontsize="10", va="center")
+    plt.title(title)
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title))
     plt.show()
 
 
@@ -118,27 +152,27 @@ def plot_pr_curve(x, y, classifier, title):
     plt.title(title + ', AP={0:0.2f}'.format(
               avg_p))
     plt.show()
-    
-    
-def _background_gradient(s, m, M, cmap='PuBu', low=0, high=0):
-    rng = M - m
-    norm = colors.Normalize(m - (rng * low),
-                            M + (rng * high))
-    normed = norm(s.values)
-    c = [colors.rgb2hex(x) for x in plt.cm.get_cmap(cmap)(normed)]
-    return ['background-color: %s' % color for color in c]
-    
-    
-    
-def print_results(df_res):
-    pretty = df_res.style.apply(_background_gradient,
-               cmap='PuBu',
-               m=df_res.min().min(),
-               M=df_res.max().max(),
-               low=0,
-               high=1)
-    print(pretty)
-    
+
+
+# def _background_gradient(s, m, M, cmap='PuBu', low=0, high=0):
+#     rng = M - m
+#     norm = colors.Normalize(m - (rng * low),
+#                             M + (rng * high))
+#     normed = norm(s.values)
+#     c = [colors.rgb2hex(x) for x in plt.cm.get_cmap(cmap)(normed)]
+#     return ['background-color: %s' % color for color in c]
+#
+#
+#
+# def print_results(df_res):
+#     pretty = df_res.style.apply(_background_gradient,
+#                cmap='PuBu',
+#                m=df_res.min().min(),
+#                M=df_res.max().max(),
+#                low=0,
+#                high=1)
+#     print(pretty)
+#
     
     
 """

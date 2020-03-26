@@ -8,6 +8,8 @@ import util.label_utils as lutil
 import util.sync_utils as sutil
 from data_processing import process
 
+import numpy
+
 
 """
 Class that brings together feature and label side to provide all data needed for classification.
@@ -26,6 +28,8 @@ class DataProvider:
         self.is_loaded = False #bool to check whether the raw data has already been loaded into memory
         self.draw = draw
         self.all_days_df = None
+        self.featuregen = None
+        self.lablegen = None
         
     def _load_raws(self, patient, days):
         if type(days) is int:
@@ -144,56 +148,56 @@ if __name__ == '__main__':
     muell = provider.get_data(configs)
 
 
-    wsize = 50
-    sliding = False
-
-    configs['wsize']=wsize
-    configs['sliding']=sliding
-
-    print('los')
-    muell = provider.get_data(configs)
-
-
-    shuffle = True
-
-    configs['shuffle']=shuffle
-
-    print('los')
-    muell = provider.get_data(configs)
-
-
-    wsize = 100
-    shuffle = False
-
-
-    configs['wsize']=wsize
-    configs['shuffle']=shuffle
-
-    print('los')
-    muell = provider.get_data(configs)
-
-
-    shuffle = True
-    configs['shuffle']=shuffle
-
-    print('los')
-    muell = provider.get_data(configs)
-
-
-    wsize = 5
-    shuffle = False
-
-    configs['wsize']=wsize
-    configs['shuffle']=shuffle
-
-    print('los')
-    muell = provider.get_data(configs)
-
-    shuffle = True
-    configs['shuffle']=shuffle
-
-    print('los')
-    muell = provider.get_data(configs)
-    del(provider)
-    del(muell)
-
+    # wsize = 50
+    # sliding = False
+    #
+    # configs['wsize']=wsize
+    # configs['sliding']=sliding
+    #
+    # print('los')
+    # muell = provider.get_data(configs)
+    #
+    #
+    # shuffle = True
+    #
+    # configs['shuffle']=shuffle
+    #
+    # print('los')
+    # muell = provider.get_data(configs)
+    #
+    #
+    # wsize = 100
+    # shuffle = False
+    #
+    #
+    # configs['wsize']=wsize
+    # configs['shuffle']=shuffle
+    #
+    # print('los')
+    # muell = provider.get_data(configs)
+    #
+    #
+    # shuffle = True
+    # configs['shuffle']=shuffle
+    #
+    # print('los')
+    # muell = provider.get_data(configs)
+    #
+    #
+    # wsize = 5
+    # shuffle = False
+    #
+    # configs['wsize']=wsize
+    # configs['shuffle']=shuffle
+    #
+    # print('los')
+    # muell = provider.get_data(configs)
+    #
+    # shuffle = True
+    # configs['shuffle']=shuffle
+    #
+    # print('los')
+    # muell = provider.get_data(configs)
+    # del(provider)
+    # del(muell)
+    #

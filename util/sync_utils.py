@@ -13,7 +13,7 @@ def find_paths(patient_name, day_no):
     video_filename = patient_name+'_day_'+str(day_no)+'.hdf'
     path = os.path.join('/nas/ecog_project/derived/processed_ecog',patient_name,'full_day_ecog')
     ecog_path = os.path.join(path, filename)
-    video_path = os.path.join('/home/emil/data/hdf_data/by_day_new/',video_filename)
+    video_path = os.path.join('/home/emil/data/hdf_data/by_day_new/',patient_name,video_filename)
 
     #check if file exists
     if not (os.path.exists(ecog_path) and os.path.exists(video_path)):
@@ -34,7 +34,8 @@ def find_start_and_end_time(vid_path):
     nrows = store.get_storer('df').shape[0]
     # this is beginning of last video. since we might be going into next day, we won't use the last vid
     end_time = (store.select('df', start = nrows -1, stop = nrows)['steve_time'].iloc[0])
-    end_seconds = in_seconds(end_time)
+    remaining_frames = (store.select('df', start = nrows -1, stop = nrows)['frame'].iloc[0])
+    end_seconds = in_seconds(end_time) + remaining_frames/30
     store.close()
     return int(start_seconds), int(end_seconds)
 
@@ -43,7 +44,7 @@ def find_start_and_end_time(vid_path):
 Simple conversion of timestamp to total seconds since midnight 
 """
 def in_seconds(time):
-    return (time.hour * 60 + time.minute) * 60 + time.second
+    return (time.hour * 60 + time.minute) * 60 + time.second + time.microsecond * 1e-6
 
 
 

@@ -1,10 +1,3 @@
-
-# get_ipython().run_line_magic('load_ext', 'autoreload')
-# get_ipython().run_line_magic('autoreload', '2')
-
-
-
-
 import sys
 sys.path.append('..')
 
@@ -71,13 +64,19 @@ def vis_results(x,y, x_ev, y_ev, configs):
     prec_tr,recall_tr = get_precision_recall(y_pred,y)
     prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
 
-    df_res = pd.DataFrame(index =['Train','Eval'],columns = ['Precision','Recall','F1']).astype('float')
-    df_res.loc['Train'] = [prec_tr, recall_tr,f1_tr]
-    df_res.loc['Eval'] = [prec_ev, recall_ev,f1_ev]
-    cvis.print_results(df_res)
+    # df_res = pd.DataFrame(index =['Train','Eval'],columns = ['Precision','Recall','F1']).astype('float')
+    # df_res.loc['Train'] = [prec_tr, recall_tr,f1_tr]
+    # df_res.loc['Eval'] = [prec_ev, recall_ev,f1_ev]
+    # cvis.print_results(df_res)
+
     #draw pretty plots
-    cvis.conf_mat(y_pred,y)
-    cvis.conf_mat(y_pred_ev,y_ev)
+    title = dutil.generate_filename(configs)
+    cvis.score_heatmap(y_pred, y, 'Metrics '+title+' Train Set')
+    cvis.score_heatmap(y_pred_ev, y, 'Metrics '+title+' Test Set')
+    cvis.conf_mat(y_pred,y, 'Confusion Matrix '+title+' Train Set')
+    cvis.conf_mat_new(y_pred,y, 'Confusion Matrix New'+title+' Train Set')
+    cvis.conf_mat(y_pred_ev,y_ev,'Confusion Matrix '+title+' Test Set')
+    cvis.conf_mat_new(y_pred_ev,y_ev, 'Confusion Matrix New '+title+' Test Set')
 
     cvis.plot_roc(x,y,classifier, 'Random Forest ROC on Train Set')
     cvis.plot_roc(x_ev,y_ev,classifier,  'Random Forest ROC on Eval Set')
@@ -85,34 +84,20 @@ def vis_results(x,y, x_ev, y_ev, configs):
     cvis.plot_pr_curve(x_ev,y_ev,classifier, 'Random Forest ROC on Eval Set')
 
     
-def do_all(file, cut, shuffled=False, random = False, reload= False):
+def do_all(file, cut, shuffled=False, reload= False):
 # def do_all(data, cut, shuffled=False, random = True):
     provider = DataProvider()
     configs = dutil.generate_configs_from_file(file, cut)
     print(configs)
-    x,y,x_ev,y_ev = provider.get_data(configs)
+    x,y,x_ev,y_ev = provider.get_data(configs, reload=True)
     print(x.shape,y.shape,x_ev.shape,y_ev.shape)
-    #if random:
-    if False:
-        print('yes, random')
-        np.random.seed()
-        y = randomize_labels(y)
-        y_ev = randomize_labels(y_ev)
     if reload:
         res = dutil.load_results(configs,'RF')
     else:
         res = calc_results_and_save(x,y,configs,shuffled)
-    
-    train_and_save_best_classifier(res,x,y,configs) #best classifier is the one with best AUC (PR or ROC)
 
-    # res = calc_results_and_save(x,y,shuffled)
-#     #### get best resul on train set
-#     pos = res['AVG PR'].idxmax()
-#     best_row=list(res.loc[pos].values) # get the row with highest ev score
-#     best_row.append(y)
-#     best_row.append(y_ev)
-#     return best_row
-    ####
+    # best classifier is the one with best AUC (PR or ROC)
+    train_and_save_best_classifier(res,x,y,configs)
     vis_results(x,y, x_ev, y_ev, configs)
     
 def randomize_labels(y):
@@ -124,37 +109,19 @@ def randomize_labels(y):
     ret[fill_ones]=1
     return ret
     
-    
 
+if __name__ == '__main__':
+    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets')]# if 'shuffle_False' in f and '3' in f]
+    cuts = [.05]#,.1,.2,.3]
+    all_elements = [files,cuts]
 
-# In[4]:
+    file_cut_combos = []
+    for allel in product(*all_elements):
+        file_cut_combos += [allel]
 
+    pool = Pool(7)
+    yass = pool.starmap(do_all,file_cut_combos)
 
-files = [f for f in os.listdir('/home/emil/OpenMindv2/data/new_labels') if 'shuffle_True' in f and '3' in f]
-cuts = [.05,.1,.2,.3]
-# shuffled =[False]
-all_elements = [files,cuts]
-# #all_elements = [[bla],cuts]
-
-file_cut_combos = []
-for allel in product(*all_elements):
-    file_cut_combos+=[allel]
-
-
-# In[5]:
-
-
-files
-
-
-# In[ ]:
-
-
-# do_all(files[2],.1)
-
-pool = mp.Pool(7)
-yass = pool.starmap(do_all,file_cut_combos)
-
-del(pool)
-del(yass)
+    del(pool)
+    del(yass)
 

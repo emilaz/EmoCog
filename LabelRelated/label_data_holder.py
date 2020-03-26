@@ -64,10 +64,10 @@ class LabelDataHolder:
             last_vid = vid_nos[-1]
             for vid in vid_nos:
                 # actual frames saved in hdf (as opposed to supposed no. frames
-                actual_frames = curr_sess[curr_sess['video']==vid][col].values
-                # wherever success = 0, we want to put nans. we don't know anything there
-                success = curr_sess[curr_sess['success']==vid][col].values
-                actual_frames[success==0] = np.nan
+                actual_frames = curr_sess[curr_sess['video']==vid][col].values.astype(float)
+                # wherever success = 0, we want to put nans. we don't know anything there. Hence we need flaot type
+                success = curr_sess[curr_sess['video']==vid]['success'].values
+                actual_frames[success == 0] = np.nan
                 if col == 'annotated': #the annotated labels are strings. Convert here.
                     actual_frames = util.convert_labels_readable(actual_frames)
                 start, supposed_no_frames = util.find_number_frames(curr_sess,vid, last_vid) #how many frames does the video actually have?

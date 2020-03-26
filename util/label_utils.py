@@ -1,7 +1,4 @@
 import numpy as np
-import pandas as pd
-import os
-import datetime
 from util.sync_utils import in_seconds
 
 
@@ -79,11 +76,11 @@ def find_number_frames(df, vid, last_vid):
             break
         except IndexError: #in case of last video
             if last_vid == vid:
-                elapsed = 121
+                elapsed = float(df[df['video']==vid]['frame'].iloc[-1])/30
                 break
-    elapsed_frames = int(elapsed * 30)
+    elapsed_frames = elapsed * 30
     time_vid_frames = time_vid_secs * 30
-    return time_vid_frames, elapsed_frames
+    return int(time_vid_frames), int(elapsed_frames)
 
 """
 This function distributes the given m frames along an array of size n (>m), the rest are nans
@@ -92,13 +89,28 @@ Output: Array of length n with frames distributed along array (in ordered manner
 
 def fill_frames(actual_labels,supposed_no_labels):
     no_labels = len(actual_labels) #how many labels do we have?
+    # max_of_both = max(no_labels,supposed_no_labels) #warning: this only temporarily hopefully
     places = np.empty(supposed_no_labels) #create array of length we actually want
+    # places = np.empty(max_of_both) #create array of length we actually want
     places[:]=np.nan
     #all vids are around 120 long, if not, then there are vids missing/pause bw sessions
-    if supposed_no_labels > 125*30:
+    if supposed_no_labels > 200*30:
         #fill only 2 mins
         positions = sorted(np.random.choice(max(no_labels, 121*30),no_labels,replace=False))
-    else:
+    elif no_labels<supposed_no_labels:
         positions = sorted(np.random.choice(supposed_no_labels,no_labels,replace=False)) #which positions do we want to fill?
-    places[positions] = actual_labels
+    else:
+        positions = np.arange(supposed_no_labels)
+        actual_labels = actual_labels[:supposed_no_labels]
+        if no_labels-supposed_no_labels > 10:
+            print('ajoo', no_labels-supposed_no_labels)
+            raise ValueError('More than 10 frames are overshot here, somethings wrong')
+    try:
+        places[positions] = actual_labels
+    except IndexError as e:
+        print(e)
+        print(supposed_no_labels)
+        print(actual_labels)
+        print(positions)
+
     return places 
