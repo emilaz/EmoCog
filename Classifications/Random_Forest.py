@@ -72,30 +72,35 @@ def vis_results(x,y, x_ev, y_ev, configs):
     #draw pretty plots
     title = dutil.generate_filename(configs)
     cvis.score_heatmap(y_pred, y, 'Metrics Train Set '+title)
-    cvis.score_heatmap(y_pred_ev, y_ev, 'Metrics Test Set'+title)
-    cvis.conf_mat(y_pred,y, 'Confusion Matrix Train Set'+title)
-    cvis.conf_mat(y_pred_ev,y_ev,'Confusion Matrix Test Set'+title)
+    cvis.score_heatmap(y_pred_ev, y_ev, 'Metrics Test Set '+title)
+    cvis.conf_mat(y_pred,y, 'Confusion Matrix Train Set '+title)
+    cvis.conf_mat(y_pred_ev,y_ev,'Confusion Matrix Test Set '+title)
 
-    cvis.plot_roc(x,y,classifier, 'Random Forest ROC on Train Set')
-    cvis.plot_roc(x_ev,y_ev,classifier,  'Random Forest ROC on Eval Set')
-    cvis.plot_pr_curve(x,y,classifier, 'Random Forest Pr-Re curve on Train Set')
-    cvis.plot_pr_curve(x_ev,y_ev,classifier, 'Random Forest ROC on Eval Set')
+    cvis.plot_roc(x,y,classifier, 'Random Forest ROC Train Set '+title)
+    cvis.plot_roc(x_ev,y_ev,classifier,  'Random Forest ROC Test Set '+title)
+    cvis.plot_pr_curve(x,y,classifier, 'Random Forest PR curve Train Set '+title)
+    cvis.plot_pr_curve(x_ev,y_ev,classifier, 'Random Forest PR curve Test Set '+title)
 
     
-def do_all(file, cut, shuffled=False, reload= False):
-# def do_all(data, cut, shuffled=False, random = True):
+def do_all(file, cut, shuffled=False, reload= True):
     provider = DataProvider()
     configs = dutil.generate_configs_from_file(file, cut)
     print(configs)
     x,y,x_ev,y_ev = provider.get_data(configs, reload=True)
     print(x.shape,y.shape,x_ev.shape,y_ev.shape)
     if reload:
-        res = dutil.load_results(configs,'RF')
+        try:
+            res = dutil.load_results(configs,'RF')
+        # this assumes we just want to visualize. If you want to actually calulcate here, do differently
+        except FileNotFoundError as e:
+            print(configs)
+            print(e)
+            return
     else:
         res = calc_results_and_save(x,y,configs,shuffled)
+        # best classifier is the one with best AUC (PR or ROC)
+        train_and_save_best_classifier(res,x,y,configs)
 
-    # best classifier is the one with best AUC (PR or ROC)
-    train_and_save_best_classifier(res,x,y,configs)
     vis_results(x,y, x_ev, y_ev, configs)
     
 def randomize_labels(y):
@@ -109,15 +114,15 @@ def randomize_labels(y):
     
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets')]# if 'shuffle_False' in f and '3' in f]
-    cuts = [.1,.2,.3,.5]
+    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'shuffle_False' in f]
+    cuts = [.3,.5,.7]
     all_elements = [files,cuts]
 
     file_cut_combos = []
     for allel in product(*all_elements):
         file_cut_combos += [allel]
 
-    pool = Pool(7)
+    pool = Pool(8)
     yass = pool.starmap(do_all,file_cut_combos)
 
     del(pool)

@@ -68,24 +68,24 @@ def conf_mat(pred, true, title):
     plt.title(title)
     plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
     plt.show()
+    plt.close()
 
 
 def score_heatmap(pred, true, title):
     met_dict = metrics.classification_report(true, pred, output_dict=True)
     df = pd.DataFrame(met_dict)
     del df['weighted avg']
-    df.drop(index ='support', inplace=True)
     acc = df['accuracy'].values
     del df['accuracy']
-    print(acc)
     df.loc[len(df)] = [np.nan]*2+[acc[0]]
-    df.rename(columns={'macro avg':'Total', 0:'Not happy', 1:'Happy'}, index={3:'accuracy'},inplace=True)
+    df.rename(columns={'macro avg':'Total', 0.0:'Not happy', 1.0:'Happy'}, index={4:'accuracy'},inplace=True)
     plt.figure(figsize = (10,7))
-    sns.heatmap(df.T,annot=True,cmap='Reds', fmt='g', vmin = 0,vmax=1)
+    sns.heatmap((df.T).round(2),annot=True,cmap='Reds', fmt='g', vmin = 0,vmax=1, annot_kws={"size": 22})
     plt.yticks(rotation=0, fontsize="10", va="center")
     plt.title(title)
     plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
     plt.show()
+    plt.close()
 
 
 def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!!
@@ -106,10 +106,8 @@ def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!
         aucs.append(roc_auc)
         i += 1
 
-
     plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
               label='Chance', alpha=.8)
-
 
     mean_interpol_tpr = np.mean(tprs, axis=0)
     mean_interpol_auc = auc(fpr_interval, mean_interpol_tpr)
@@ -130,7 +128,9 @@ def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!
     plt.ylabel('True Positive Rate')
     plt.title(title)
     plt.legend(loc="lower right")
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
     plt.show()
+    plt.close()
 
 
 def plot_pr_curve(x, y, classifier, title):
@@ -151,7 +151,9 @@ def plot_pr_curve(x, y, classifier, title):
     plt.xlim([0.0, 1.0])
     plt.title(title + ', AP={0:0.2f}'.format(
               avg_p))
+    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
     plt.show()
+    plt.close()
 
 
 # def _background_gradient(s, m, M, cmap='PuBu', low=0, high=0):

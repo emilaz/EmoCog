@@ -143,61 +143,66 @@ if __name__ == '__main__':
     configs['expvar'] = expvar
     configs['ratio'] = ratio
     configs['shuffle']= shuffle
-    print('los')
+    print('los', configs)
     #provider.reload_generators()
     muell = provider.get_data(configs)
 
 
-    # wsize = 50
-    # sliding = False
-    #
-    # configs['wsize']=wsize
-    # configs['sliding']=sliding
-    #
-    # print('los')
-    # muell = provider.get_data(configs)
+    wsize = 50
+    sliding = False
+
+    configs['wsize']=wsize
+    configs['sliding']=sliding
+
+    print('los', configs)
+    muell = provider.get_data(configs)
     #
     #
     # shuffle = True
     #
     # configs['shuffle']=shuffle
     #
-    # print('los')
+    # print('los', configs)
     # muell = provider.get_data(configs)
     #
     #
-    # wsize = 100
+    wsize = 100
     # shuffle = False
     #
     #
-    # configs['wsize']=wsize
+    configs['wsize']=wsize
     # configs['shuffle']=shuffle
     #
-    # print('los')
-    # muell = provider.get_data(configs)
+    print('los', configs)
+    muell = provider.get_data(configs)
     #
     #
     # shuffle = True
     # configs['shuffle']=shuffle
     #
-    # print('los')
+    # print('los', configs)
     # muell = provider.get_data(configs)
     #
     #
-    # wsize = 5
+    wsize = 5
     # shuffle = False
     #
-    # configs['wsize']=wsize
+    configs['wsize']=wsize
     # configs['shuffle']=shuffle
     #
-    # print('los')
-    # muell = provider.get_data(configs)
+    print('los', configs)
+    muell = provider.get_data(configs)
     #
     # shuffle = True
     # configs['shuffle']=shuffle
     #
-    # print('los')
+    # print('los', configs)
     # muell = provider.get_data(configs)
     # del(provider)
     # del(muell)
     #
+    
+    wsize = 30
+    configs['wsize'] = wsize
+    print('los', configs)
+    muell = provider.get_data(configs)
