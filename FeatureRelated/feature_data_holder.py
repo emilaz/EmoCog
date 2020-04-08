@@ -20,6 +20,7 @@ class FeatDataHolder:
         #sampling frequency and last sample taken
         df=h5py.File(path)
         chan_info = pd.read_hdf(path,key='chan_info')
+        # chan_info = df.attrs['chan_info'][()]
         self.sfreq=int(df['f_sample'][()])
         self.start = start
         self.end = end 

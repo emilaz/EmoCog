@@ -3,16 +3,17 @@ import pandas as pd
 from functools import reduce
 from sklearn.decomposition import PCA
 
-
-
 """
 Standardizes data (demean& unit variance)
 Input: Data, standart deviation of data, mean of data
 """
-def standardize(data,std,data_mean):
-    data_dem = data-data_mean[:,None]
-    data_stand = data_dem/(std[:,None])
+
+
+def standardize(data, std, data_mean):
+    data_dem = data - data_mean[:, None]
+    data_stand = data_dem / (std[:, None])
     return data_stand
+
 
 """
 Return indices of bad time points, based on outlier detection
@@ -20,21 +21,22 @@ Input: Data matrix
 Output: Bad indices matrix, same length as data matrix
 """
 
-def detect_artifacts(data_matrix, std_lim=None, med_lim = None):
-    #first, we only want to look at the high-freq bin:
-    high_freqs = data_matrix[7::8,:]
-    #next, calculate median std across each channel(should be 1 I think)
+
+def detect_artifacts(data_matrix, std_lim=None, med_lim=None):
+    # first, we only want to look at the high-freq bin:
+    high_freqs = data_matrix[7::8, :]
+    # next, calculate median std across each channel(should be 1 I think)
     if std_lim is None:
-        std_lim = np.std(high_freqs,axis=1)
-        med_lim = np.median(high_freqs,axis=1)
-    #next, for each row, get all indices that are too far away from the median in one direction
-    too_high = high_freqs>(med_lim+4*std_lim)[:,None] #should yield a 2D matrix
-    #for each column, check if there is an entry that's too high
-    too_high_idx = np.any(too_high,axis=0)
-    #same for other direction
-    too_low = high_freqs<(med_lim-4*std_lim)[:,None] #should yield a 2D matrix
-    too_low_idx = np.any(too_low,axis=0)
-    bad_idx = too_low_idx | too_high_idx #any index either too high or too low? that is a bad index
+        std_lim = np.std(high_freqs, axis=1)
+        med_lim = np.median(high_freqs, axis=1)
+    # next, for each row, get all indices that are too far away from the median in one direction
+    too_high = high_freqs > (med_lim + 4 * std_lim)[:, None]  # should yield a 2D matrix
+    # for each column, check if there is an entry that's too high
+    too_high_idx = np.any(too_high, axis=0)
+    # same for other direction
+    too_low = high_freqs < (med_lim - 4 * std_lim)[:, None]  # should yield a 2D matrix
+    too_low_idx = np.any(too_low, axis=0)
+    bad_idx = too_low_idx | too_high_idx  # any index either too high or too low? that is a bad index
     return bad_idx, std_lim, med_lim
 
 
@@ -43,43 +45,45 @@ def detect_artifacts(data_matrix, std_lim=None, med_lim = None):
 #     return good_data
 
 
-#this function caps at 150Hz, then bins the data in a logarithmic fashion to account for smaller psd values in higher freqs
+# this function caps at 150Hz, then bins the data in a logarithmic fashion to account for smaller psd values in higher freqs
 """
 Key function for feature processing. Truncates frequencies above 150Hz, bins the frequencies logarithmically.
 Throws the PSD into these bins by summing all PSD that fall into a certain bin.
 Input: Frequency array, PSD array
 Output: Binned frequencies, binned PSD
 """
-def bin_psd(fr,psd):
-    fr_trun=fr[fr<=150]
-    fr_total=len(fr_trun)
-    fr_bins=np.arange(int(np.log2(max(fr_trun))+1)) #just np.arange(no_fr_bins)
-    #truncate everythin above 150Hz
-    psd=psd[:,fr<=150]
-    psd_bins=np.zeros((psd.shape[0],len(fr_bins)))
-    prev=0
-    #these are the general upper limits. they don't give info where in fr/psd these frequencies acutally are!
-    max_psd_per_bin=np.exp2(fr_bins).astype('int')
-    #hence we need this method. It gives us a 2D array with the number of rows = number of bins,
-    #where each row contains 2 values, upper and lower limit of that bin
-    prev=0
-    limits=np.zeros((max_psd_per_bin.shape[0],2),dtype='int')
-    for en,b in enumerate(max_psd_per_bin):
-        if en==0:
-            arr=np.where((fr_trun >=prev)&(fr_trun<=b))[0]
+
+
+def bin_psd(fr, psd):
+    fr_trun = fr[fr <= 150]
+    fr_total = len(fr_trun)
+    fr_bins = np.arange(int(np.log2(max(fr_trun)) + 1))  # just np.arange(no_fr_bins)
+    # truncate everythin above 150Hz
+    psd = psd[:, fr <= 150]
+    psd_bins = np.zeros((psd.shape[0], len(fr_bins)))
+    prev = 0
+    # these are the general upper limits. they don't give info where in fr/psd these frequencies acutally are!
+    max_psd_per_bin = np.exp2(fr_bins).astype('int')
+    # hence we need this method. It gives us a 2D array with the number of rows = number of bins,
+    # where each row contains 2 values, upper and lower limit of that bin
+    prev = 0
+    limits = np.zeros((max_psd_per_bin.shape[0], 2), dtype='int')
+    for en, b in enumerate(max_psd_per_bin):
+        if en == 0:
+            arr = np.where((fr_trun >= prev) & (fr_trun <= b))[0]
         else:
-            arr=np.where((fr_trun >prev)&(fr_trun<=b))[0]
-        check=np.array([min(arr),max(arr)])
-        limits[np.log2(b).astype('int')]=check
-        prev=b
-    prev=0
-    #now, we will the psd_bins by adding up all psd in the range defined before. The last bin gets all remaining frequencies
-    #meaning, if the last bin ranges from 64-128, it'll also include everything until 150.
+            arr = np.where((fr_trun > prev) & (fr_trun <= b))[0]
+        check = np.array([min(arr), max(arr)])
+        limits[np.log2(b).astype('int')] = check
+        prev = b
+    prev = 0
+    # now, we will the psd_bins by adding up all psd in the range defined before. The last bin gets all remaining frequencies
+    # meaning, if the last bin ranges from 64-128, it'll also include everything until 150.
     for b in fr_bins:
-        if (b==fr_bins[-1] or limits[b][1]>=fr_total):
-            psd_bins[:,b]+=np.sum(psd[:,limits[b,0]:],axis=1)
+        if (b == fr_bins[-1] or limits[b][1] >= fr_total):
+            psd_bins[:, b] += np.sum(psd[:, limits[b, 0]:], axis=1)
         else:
-            psd_bins[:,b]=np.sum(psd[:,limits[b,0]:limits[b,1]+1],axis=1)
+            psd_bins[:, b] = np.sum(psd[:, limits[b, 0]:limits[b, 1] + 1], axis=1)
     return fr_bins, psd_bins
 
 
@@ -89,17 +93,18 @@ Given some minimum of explained variance of the data, return the number of compo
 Input: Data, desired variance explained
 Output: Number of Components needed.
 """
-def get_no_comps(data,expl_var_lim):
-    comps=min(100,min(data.shape))
-    pca=PCA(n_components=comps)
-    pca.fit(data)
-    tot=0
-    for idx,c in enumerate(pca.explained_variance_ratio_):
-        tot+=c
-        if tot*100>expl_var_lim:
-            return idx+1
-    return pca.n_components_
 
+
+def get_no_comps(data, expl_var_lim):
+    comps = min(100, min(data.shape))
+    pca = PCA(n_components=comps)
+    pca.fit(data)
+    tot = 0
+    for idx, c in enumerate(pca.explained_variance_ratio_):
+        tot += c
+        if tot * 100 > expl_var_lim:
+            return idx + 1
+    return pca.n_components_
 
 
 """
@@ -107,33 +112,40 @@ Function to find the indices of channels that were good across days.
 Input: PD Series with good channel info per day
 Output: Good Indices?
 """
+
+
 def find_common_channels(channels_per_day, additional_channels):
-    common = reduce(np.intersect1d, channels_per_day) #which channels are good on all days?
+    common = reduce(np.intersect1d, channels_per_day)  # which channels are good on all days?
     if additional_channels is not None:
-        common = reduce(np.intersect1d, np.array((common,additional_channels)))
+        common = reduce(np.intersect1d, np.array((common, additional_channels)))
     return common
 
 
 def find_common_channel_indices(channels_per_day, common_channels):
-    #get the indices of these common channels, for each day
-    good_df = pd.DataFrame(columns = ['Day','CommonChans'])
+    # get the indices of these common channels, for each day
+    good_df = pd.DataFrame(columns=['Patient', 'Day', 'CommonChans'])
     for idx, row in channels_per_day.iterrows():
-        indices=[np.min(np.nonzero(row['GoodChans']==ch)[0]) for ch in common_channels] #these are the indices to keep - not necessarily in correct order!
-        good = np.zeros(len(row['GoodChans']),dtype='bool') #therefore, bool array for order
+        indices = [np.min(np.nonzero(row['GoodChans'] == ch)[0]) for ch in
+                   common_channels]  # these are the indices to keep - not necessarily in correct order!
+        good = np.zeros(len(row['GoodChans']), dtype='bool')  # therefore, bool array for order
         good[indices] = True
-        good_df.loc[idx] = [row['Day'], good]
+        good_df.loc[idx] = [row['Patient'], row['Day'], good]
     return good_df
 
 
-
-def filter_common_channels(common_df, additional_channels = None):
-    good_chans = find_common_channels(common_df['GoodChans'], additional_channels)
-    good_idx = find_common_channel_indices(common_df[['Day','GoodChans']], good_chans)
-    for idx,day in enumerate(good_idx['Day']):
-        good = good_idx.loc[good_idx['Day']==day,'CommonChans'][idx]
-        new_data = common_df[common_df['Day']==day]['BinnedData'][idx][good,:,:]
-        common_df.loc[common_df['Day']==day,'BinnedData'] = [new_data]
-        spraa = common_df.loc[common_df['Day']==day,'GoodChans'][idx][good]
-        common_df.loc[common_df['Day']==day,'GoodChans'] = [spraa]
+def filter_common_channels(common_df, additional_channels=None):
+    good_common_chans = find_common_channels(common_df['GoodChans'], additional_channels)
+    good_idx = find_common_channel_indices(common_df[['Patient', 'Day', 'GoodChans']], good_common_chans)
+    new_chan_col = []  # don't modify a df you're iterating over (as per docs)
+    new_df_col = []
+    for idx, row in good_idx.iterrows():
+        pat = row['Patient']
+        day = row['Day']
+        good = good_idx[(good_idx['Patient'] == pat) & (good_idx['Day'] == day)]['CommonChans'].iloc[0]
+        new_data = common_df[(common_df['Patient'] == pat) &
+                             (common_df['Day'] == day)]['BinnedData'].iloc[0][good, :, :]
+        new_df_col.append(new_data)
+        filtered_chans = common_df.loc[(common_df['Patient'] == pat) & (common_df['Day'] == day)]['GoodChans'].iloc[0][good]
+        new_chan_col.append(filtered_chans)
+    common_df = common_df.assign(BinnedData=new_df_col, GoodChans=new_chan_col)
     return common_df
-
