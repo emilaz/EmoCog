@@ -38,10 +38,10 @@ Output: Seconds passed since midnight until video session began
 def find_start_and_end_time(vid_path):
     store = pd.HDFStore(vid_path, 'r')
     # first, where is the start of the video, in secs?
-    start_time = (store.select('df', stop=1)['steve_time'].iloc[0])
+    start_time = store.select('df', stop=1)['steve_time'].iloc[0]
     start_seconds = in_seconds(start_time)
     # now for the end of the video. First, check if still same day
-    nrows = store.get_storer('df').shape[0]
+    nrows = store.get('df').shape[0]
     # this is beginning of last video. since we might be going into next day, we won't use the last vid
     end_time = (store.select('df', start=nrows - 1, stop=nrows)['steve_time'].iloc[0])
     remaining_frames = (store.select('df', start=nrows - 1, stop=nrows)['frame'].iloc[0])

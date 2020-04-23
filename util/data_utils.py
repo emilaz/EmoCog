@@ -123,7 +123,8 @@ def load_results(configs,methodtype):
 
 
 """
-This method saves the obtained PCA to a file for later inspection, as well as the parameters needed for artifact removal and standardization
+This method saves the obtained PCA to a file for later inspection, as well as 
+the parameters needed for artifact removal and standardization and good channels
 Input: classifier, config file
 Output: None
 """

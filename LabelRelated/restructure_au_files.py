@@ -64,7 +64,7 @@ if __name__=='__main__':
     ]
 
     # this gets the realtimes for the videos
-    time_path = os.path.join('/nas/ecog_project/derived/processed_ecog/',pat,'full_day_ecog/vid_start_end_merge.csv')
+    time_path = os.path.join('/data1/ecog_project/derived/processed_ecog/',pat,'full_day_ecog/vid_start_end_merge.csv')
     times = pd.read_csv(time_path)
 
     # load all files of this patient into memory using multiprocessing

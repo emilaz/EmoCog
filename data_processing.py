@@ -18,7 +18,7 @@ def setup_pca(curr_data, expl_variance, pca=None):
     if pca is None:
         print('Setting up PCA on current data range...')
         no_comps = futil.get_no_comps(curr_data, expl_variance)
-        pca = PCA(n_components=no_comps)
+        pca = PCA(n_components=no_comps, random_state=4)  # random state to get consistent results
         pca.fit(curr_data)
     return pca, pca.transform(curr_data)
 
@@ -75,7 +75,6 @@ def filter_channels_for_standardizing(tools, other_good_chans):
 def process(joined_df, good_chans, configs):
     # first, synchronize this shit
     x_clean, y_clean = util.filter_nans(joined_df)
-
     # next, separate into train and test
     # in theory, though very unlikely, due to the configs['sliding'] window,
     # there could still be train samples in the eval set as well.
@@ -99,14 +98,17 @@ def process(joined_df, good_chans, configs):
     artifacts_ev, _, _ = futil.detect_artifacts(x_ev, std_lim, std_med)
     x_tr, y_tr = util.filter_artifacts(x_tr, y_tr, artifacts_tr)
     x_ev, y_ev = util.filter_artifacts(x_ev, y_ev, artifacts_ev)
+
     # then, do standardizing
     std = np.std(x_tr, axis=1)
     mean = np.mean(x_tr, axis=1)
     x_tr = futil.standardize(x_tr, std, mean)
     x_ev = futil.standardize(x_ev, std, mean)
+
     # and PCA on feature sets
     pca, x_tr = setup_pca(x_tr.T, configs['expvar'])
     _, x_ev = setup_pca(x_ev.T, configs['expvar'], pca)
+
     print('Saving PCA model and other processing info to file.')
     dutil.save_processing_tools(pca, [std_lim, std_med], [std, mean], good_chans, configs)
     # now ready to return/rumble

@@ -22,7 +22,7 @@ class FeatureGenerator:
         self.sfreq = 500  # will always be, hopefully lol
         self.df = util.filter_common_channels(df)
         # this needs to be passed on to the label side. Will include bad indices found during calculation
-        self.good_channels = self.df['GoodChans'].loc[0]
+        self.good_channels = self.df['GoodChans'].iloc[0]
 
     """
     Function needed for calculating the features. Central piece on the feature side. Works as follows:

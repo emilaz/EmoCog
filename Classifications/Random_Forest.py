@@ -30,8 +30,8 @@ def train_and_save_best_classifier(results,x,y,configs):
     
 
 # Run classifier with cross-validation
-def calc_results_and_save(x, y, configs, shuff):
-    cv = StratifiedKFold(n_splits=10, shuffle=shuff, random_state=1)
+def calc_results_and_save(x, y, configs):
+    cv = StratifiedKFold(n_splits=10, shuffle=False, random_state=1)
     #dataframe for saving results
     results = pd.DataFrame(columns=('Number Estimators','Max Depth','Max Features','AVG PR'))#,'AUC ROC'))
     #do random search on parameters
@@ -46,8 +46,8 @@ def calc_results_and_save(x, y, configs, shuff):
         #auc_roc =util.get_auc_score(classifier, cv, x, y, go_after_pr=False)
         results.loc[idx] = [c,d,f,auc_pr]
         print('Number Estimators= %d, Max Depth = %d, Max Feat = %d, AUC PR %.3f' % (c,d,f,auc_pr))
-    if shuff:
-        dutil.save_results(results,configs,'RF_Shuffle') # save results for later use
+    # if shuff:
+    #     dutil.save_results(results,configs,'RF_Shuffle') # save results for later use
     else:
         dutil.save_results(results,configs,'RF') # save results for later use      
     return results
@@ -82,7 +82,7 @@ def vis_results(x,y, x_ev, y_ev, configs):
     cvis.plot_pr_curve(x_ev,y_ev,classifier, 'Random Forest PR curve Test Set '+title)
 
     
-def do_all(file, cut, shuffled=False, reload= True):
+def do_all(file, cut, reload= False):
     provider = DataProvider()
     configs = dutil.generate_configs_from_file(file, cut)
     print(configs)
@@ -97,7 +97,7 @@ def do_all(file, cut, shuffled=False, reload= True):
             print(e)
             return
     else:
-        res = calc_results_and_save(x,y,configs,shuffled)
+        res = calc_results_and_save(x,y,configs)
         # best classifier is the one with best AUC (PR or ROC)
         train_and_save_best_classifier(res,x,y,configs)
 
@@ -114,7 +114,7 @@ def randomize_labels(y):
     
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'shuffle_False' in f]
+    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'af859cc5' in f]
     cuts = [.3,.5,.7]
     all_elements = [files,cuts]
 

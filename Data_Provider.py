@@ -6,7 +6,7 @@ import pandas as pd
 import util.data_utils as dutil
 import util.label_utils as lutil
 import util.sync_utils as sutil
-import dask
+from multiprocessing import Pool
 from data_processing import process
 
 
@@ -43,13 +43,18 @@ class DataProvider:
         #     all_days_df.loc[enum] = curr_ret
         #####
         # new: do dask stuff
-        results = []
-        for paras in pat_day_df.values:
-            res = dask.delayed(self.load_raws_single_day)(*paras)
-            results.append(res)
-        res = dask.compute(*results)
+        # results = []
+        # for paras in pat_day_df.values:
+        #     res = dask.delayed(self.load_raws_single_day)(*paras)
+        #     results.append(res)
+        # res = dask.compute(*results)
+        ###
+        # even newer: do this with multiprocessing. too many core dumps happening with dask
+        p = Pool(8)
+        res = p.starmap(self.load_raws_single_day, pat_day_df.values)
         all_days_df = pd.DataFrame(res,columns=columns)
-        all_days_df = (all_days_df.sort_values(['Patient','Day'])).reset_index(drop=True)
+        all_days_df = (all_days_df.sort_values(['Patient', 'Day'])).reset_index(drop=True)
+        #for now, save this to file
         self.all_days_df = all_days_df
         self.featuregen = FeatureGenerator(all_days_df)
         self.lablegen = LabelGenerator(all_days_df)
@@ -63,12 +68,13 @@ class DataProvider:
         if realtime_start < 7*3600:  # if it's before 7AM, reset it to 7 AM
             realtime_start = 7*3600
         if realtime_end > 23*3600:
-            realtime_end = 23*3600
+            realtime_end = 23*3600 #if it's after 23PM, reset to 23PM
         print('Day {}, start time is {} , end time is {}'.format(day, realtime_start, realtime_end))
         feat_data = FeatDataHolder(path_ecog, realtime_start, realtime_end)
         label_data = LabelDataHolder(path_vid, realtime_start, realtime_end, col='Happy')
         ret = [patient, day, realtime_start, realtime_end, feat_data.get_bin_data(),
                label_data.get_pred_bin(), feat_data.chan_labels]
+               #  'TESTTEST', feat_data.chan_labels]
         del feat_data
         del label_data
         return ret
@@ -95,6 +101,7 @@ class DataProvider:
         x_df = self.featuregen.generate_features(wsize=configs['wsize'], sliding_window=configs['sliding'])
         y_df= self.lablegen.generate_labels(wsize=configs['wsize'], sliding_window=configs['sliding'])
         joined_df = x_df.merge(y_df, on = ['Patient','Day'])
+
         # annots, _ = self.annotsgen.generate_labels(configs['wsize'], start=start,end=end, sliding_window=configs['sliding'])
 #         if self.draw:
 #             LabelVis.plot_happy_ratio(y,rat)
@@ -140,8 +147,10 @@ if __name__ == '__main__':
 
     provider = DataProvider()
 
-    patient = ['cb46fd46']
-    days = [[3,4,5,6,7]]
+    patient = ['cb46fd46','af859cc5']
+    days = [[3],[4]]
+    # patient = ['cb46fd46']
+    # days = [[3, 4]]
     wsize = 100
     sliding = False
     expvar = 90
@@ -158,6 +167,15 @@ if __name__ == '__main__':
     print('los', configs)
     #provider.reload_generators()
     muell = provider.get_data(configs)
+
+    # provider = DataProvider()
+    # patient = ['cb46fd46']
+    # days = [[3,4]]
+    # configs['patient'] = patient
+    # configs['days'] = days
+    # muell = provider.get_data(configs)
+
+
 
     # wsize = 50
     # sliding = False
