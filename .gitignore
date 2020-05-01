@@ -1,11 +1,12 @@
-/FeatureRelated/.ipynb_checkpoints/
-/LabelRelated/.ipynb_checkpoints/
+/feature_related/.ipynb_checkpoints/
+/label_related/.ipynb_checkpoints/
 /util/.ipynb_checkpoints/
 /vis/.ipynb_checkpoints/
-/Classifications/.ipynb_checkpoints/
+/classifications/.ipynb_checkpoints/
 /.ipynb_checkpoints/
 /data/
 /deprecated/
 /vis/*.ipynb
 /util/*.ipynb
 .idea
+/small tests/

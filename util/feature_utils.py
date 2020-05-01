@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 from sklearn.decomposition import PCA
+import pickle
 
 """
 Standardizes data (demean& unit variance)
@@ -135,16 +136,22 @@ def find_common_channel_indices(channels_per_day, common_channels):
 
 def filter_common_channels(common_df, additional_channels=None):
     good_common_chans = find_common_channels(common_df['GoodChans'], additional_channels)
-    good_idx = find_common_channel_indices(common_df[['Patient', 'Day', 'GoodChans']], good_common_chans)
+    good_idx_df = find_common_channel_indices(common_df[['Patient', 'Day', 'GoodChans']], good_common_chans)
     new_chan_col = []  # don't modify a df you're iterating over (as per docs)
     new_df_col = []
-    for idx, row in good_idx.iterrows():
+    for idx, row in good_idx_df.iterrows():
         pat = row['Patient']
         day = row['Day']
-        good = good_idx[(good_idx['Patient'] == pat) & (good_idx['Day'] == day)]['CommonChans'].iloc[0]
-        new_data = common_df[(common_df['Patient'] == pat) &
-                             (common_df['Day'] == day)]['BinnedData'].iloc[0][good, :, :]
-        new_df_col.append(new_data)
+        good = good_idx_df[(good_idx_df['Patient'] == pat) & (good_idx_df['Day'] == day)]['CommonChans'].iloc[0]
+        data_link = common_df[(common_df['Patient'] == pat) & (common_df['Day'] == day)]['BinnedData'].iloc[0]
+        new_data = pickle.load(open(data_link,'rb'))
+        new_data = new_data[good, :, :]
+        # write to file
+        feat_link = '/home/emil/EmoCog/data/temporary/' + str(row['Patient']) + str(row['Day']) + 'feat_filtered.pkl'
+        with open(feat_link, "wb") as f:
+            print('pickling filtered feat data...')
+            pickle.dump(new_data, f, protocol=pickle.HIGHEST_PROTOCOL)
+        new_df_col.append(feat_link)
         filtered_chans = common_df.loc[(common_df['Patient'] == pat) & (common_df['Day'] == day)]['GoodChans'].iloc[0][good]
         new_chan_col.append(filtered_chans)
     common_df = common_df.assign(BinnedData=new_df_col, GoodChans=new_chan_col)

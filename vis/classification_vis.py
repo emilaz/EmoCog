@@ -4,9 +4,7 @@ import sys
 from sklearn import metrics
 
 sys.path.append('..')
-import matplotlib.pyplot as plt
-from matplotlib import colors
-from Evals import *
+from util.eval_utils import *
 from util.classification_utils import get_optimal_threshold, get_prediction
 import seaborn as sns
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score

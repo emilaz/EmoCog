@@ -3,15 +3,13 @@ sys.path.append('..')
 
 
 import vis.classification_vis as cvis
-from Evals import *
-from Data_Provider import *
+from data_creation.data_provider import *
 import util.classification_utils as util
 import util.data_utils as dutil
 
 
 import numpy as np
 
-from sklearn import svm, datasets
 from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 import os
@@ -59,15 +57,6 @@ def vis_results(x,y, x_ev, y_ev, configs):
     classifier, best_thr = dutil.load_classifier(configs,'RF')
     y_pred = util.get_prediction(classifier,x,best_thr)
     y_pred_ev = util.get_prediction(classifier,x_ev,best_thr)
-    # f1_tr=get_f1(y_pred,y) # calculate f1 scores for prediction on train set
-    # f1_ev=get_f1(y_pred_ev,y_ev)
-    # prec_tr,recall_tr = get_precision_recall(y_pred,y)
-    # prec_ev,recall_ev = get_precision_recall(y_pred_ev,y_ev)
-
-    # df_res = pd.DataFrame(index =['Train','Eval'],columns = ['Precision','Recall','F1']).astype('float')
-    # df_res.loc['Train'] = [prec_tr, recall_tr,f1_tr]
-    # df_res.loc['Eval'] = [prec_ev, recall_ev,f1_ev]
-    # cvis.print_results(df_res)
 
     #draw pretty plots
     title = dutil.generate_filename(configs)
@@ -114,9 +103,10 @@ def randomize_labels(y):
     
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'af859cc5' in f]
+    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'af859cc5' in f and '[3, 4, 5]' in f]
     cuts = [.3,.5,.7]
-    all_elements = [files,cuts]
+    reload = [False]
+    all_elements = [files,cuts, reload]
 
     file_cut_combos = []
     for allel in product(*all_elements):

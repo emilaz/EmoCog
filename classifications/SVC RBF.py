@@ -1,9 +1,8 @@
 import sys
 sys.path.append('..')
-import os
 
-from Evals import *
-from Data_Provider import *
+from util.eval_utils import *
+from data_creation.data_provider import *
 import util.classification_utils as util
 import util.data_utils as dutil
 
@@ -12,11 +11,6 @@ import matplotlib.pyplot as plt
 
 from sklearn import svm
 from sklearn.model_selection import StratifiedKFold
-
-
-from itertools import product
-
-
 
 
 #Run classifier with cross-validation and plot ROC curves

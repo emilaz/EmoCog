@@ -1,13 +1,11 @@
-from FeatureRelated.feature_generator import FeatureGenerator
-from LabelRelated.label_generator import LabelGenerator
-from FeatureRelated.feature_data_holder import FeatDataHolder
-from LabelRelated.label_data_holder import LabelDataHolder
+from feature_related.feature_generator import FeatureGenerator
+from label_related.label_generator import LabelGenerator
 import pandas as pd
 import util.data_utils as dutil
 import util.label_utils as lutil
-import util.sync_utils as sutil
-from multiprocessing import Pool
-from data_processing import process
+import itertools
+from data_creation.create_raws import generate_raws
+from data_creation.data_processing import process
 
 
 """
@@ -29,55 +27,23 @@ class DataProvider:
         self.all_days_df = None
         self.featuregen = None
         self.lablegen = None
-        
+
     def _load_raws(self, patient, days):
         # new: create df out of patient/days for using dask then
-        pat_day_df = pd.DataFrame(columns=['Patient','Day'], data = zip(patient,days)).explode('Day')
-        # this dataframe saves pat,day,st,end,the raw, non-standardized, non-PCA features and corresponding labels
+        res = generate_raws(patient, days)
+        print('Got single day results, putting it into one DataFrame.')
         columns = ['Patient', 'Day', 'Start', 'End', 'BinnedData', 'BinnedLabels', 'GoodChans']
-        #####
-        # all_days_df = pd.DataFrame(columns=columns, index=range(len(days)))
-        # for enum, day in enumerate(days):
-        #     print(day, 'this day')
-        #     curr_ret = self.load_raws_single_day(patient,day)
-        #     all_days_df.loc[enum] = curr_ret
-        #####
-        # new: do dask stuff
-        # results = []
-        # for paras in pat_day_df.values:
-        #     res = dask.delayed(self.load_raws_single_day)(*paras)
-        #     results.append(res)
-        # res = dask.compute(*results)
-        ###
-        # even newer: do this with multiprocessing. too many core dumps happening with dask
-        p = Pool(8)
-        res = p.starmap(self.load_raws_single_day, pat_day_df.values)
-        all_days_df = pd.DataFrame(res,columns=columns)
+        all_days_df = pd.DataFrame(res, columns=columns)
+        # due to size limitations, the workers only return paths to data on disk. replace with actual data here
         all_days_df = (all_days_df.sort_values(['Patient', 'Day'])).reset_index(drop=True)
-        #for now, save this to file
         self.all_days_df = all_days_df
+        print('Creating the generators..')
         self.featuregen = FeatureGenerator(all_days_df)
         self.lablegen = LabelGenerator(all_days_df)
+        print('done.')
         # das hier erstmal nicht. spaeter zur analyse vielleicht wieder
         # self.annotsgen = LabelGenerator(all_days_df,mask=self.featuregen.bad_indices['NaNs'])
         self.is_loaded = True
-        
-    def load_raws_single_day(self, patient, day):
-        path_ecog, path_vid = sutil.find_paths(patient, day)
-        realtime_start, realtime_end = sutil.find_start_and_end_time(path_vid)  # output in secs from midnight
-        if realtime_start < 7*3600:  # if it's before 7AM, reset it to 7 AM
-            realtime_start = 7*3600
-        if realtime_end > 23*3600:
-            realtime_end = 23*3600 #if it's after 23PM, reset to 23PM
-        print('Day {}, start time is {} , end time is {}'.format(day, realtime_start, realtime_end))
-        feat_data = FeatDataHolder(path_ecog, realtime_start, realtime_end)
-        label_data = LabelDataHolder(path_vid, realtime_start, realtime_end, col='Happy')
-        ret = [patient, day, realtime_start, realtime_end, feat_data.get_bin_data(),
-               label_data.get_pred_bin(), feat_data.chan_labels]
-               #  'TESTTEST', feat_data.chan_labels]
-        del feat_data
-        del label_data
-        return ret
 
     def reload_generators(self):
         self.featuregen = FeatureGenerator(self.all_days_df)
@@ -100,7 +66,12 @@ class DataProvider:
         # check whether train or test data, set start and end sample accordingly
         x_df = self.featuregen.generate_features(wsize=configs['wsize'], sliding_window=configs['sliding'])
         y_df= self.lablegen.generate_labels(wsize=configs['wsize'], sliding_window=configs['sliding'])
-        joined_df = x_df.merge(y_df, on = ['Patient','Day'])
+        joined_df = x_df.merge(y_df, on=['Patient','Day'])
+        new_col_order = ['Patient','Day','X', 'BadIndices', 'Y', 'Ratio']
+        joined_df = joined_df.reindex(columns=new_col_order)
+        print(joined_df.columns)
+        joined_df.to_hdf('/home/emil/data/check_me_out.hdf', key='df')
+        print('saved')
 
         # annots, _ = self.annotsgen.generate_labels(configs['wsize'], start=start,end=end, sliding_window=configs['sliding'])
 #         if self.draw:
@@ -114,9 +85,8 @@ class DataProvider:
         x_tr, y_tr, x_ev, y_ev = process(joined_df,
                                          self.featuregen.good_channels, configs)
         return x_tr, y_tr, x_ev, y_ev
-    
-    
-    def get_data(self, configs, shuffle_data=False, reload=False):
+
+    def get_data(self, configs, reload=False):
         # if data already exists, simply reload
         if reload:
             try:
@@ -129,7 +99,7 @@ class DataProvider:
             print(' Loading raw data into memory...')
             if not self.is_loaded:
                 self._load_raws(configs['patient'], configs['days'])
-            print('And creating the data..')
+            print('Now generating the actual data..')
             x_tr, y_tr, x_ev, y_ev = self.generate_data(configs)
             print('Done. Saving to file for later use.')
             dutil.save_data_to_file(x_tr, y_tr, x_ev, y_ev, configs)
@@ -142,20 +112,17 @@ class DataProvider:
         return x_tr, y_tr, x_ev, y_ev
 
 
-#TODO das hier muss wahrsch. modifiziert werden jetzt wo es als python file rennen soll
 if __name__ == '__main__':
 
     provider = DataProvider()
 
     patient = ['cb46fd46','af859cc5']
-    days = [[3],[4]]
-    # patient = ['cb46fd46']
-    # days = [[3, 4]]
+    days = [[3,4,5,6,7],[3,4,5]]
     wsize = 100
-    sliding = False
+    sliding = 25
+    shuffle = False
     expvar = 90
     ratio = .8
-    shuffle = False
     configs = dict()
     configs['patient'] = patient
     configs['days'] = days
@@ -168,70 +135,13 @@ if __name__ == '__main__':
     #provider.reload_generators()
     muell = provider.get_data(configs)
 
-    # provider = DataProvider()
-    # patient = ['cb46fd46']
-    # days = [[3,4]]
-    # configs['patient'] = patient
-    # configs['days'] = days
-    # muell = provider.get_data(configs)
+    wsizes = [100, 50, 30, 5]
+    shuffle = [True, False]
+    combos = itertools.product(wsizes, shuffle)
+    configs['sliding'] = False
+    for c in combos:
+        configs['wsize'] = c[0]
+        configs['shuffle'] = c[1]
+        provider.get_data(configs)
 
 
-
-    # wsize = 50
-    # sliding = False
-    #
-    # configs['wsize'] = wsize
-    # configs['sliding'] = sliding
-    #
-    # print('los', configs)
-    # muell = provider.get_data(configs)
-    # #
-    # #
-    # # shuffle = True
-    # #
-    # # configs['shuffle']=shuffle
-    # #
-    # # print('los', configs)
-    # # muell = provider.get_data(configs)
-    # #
-    # #
-    # wsize = 100
-    # # shuffle = False
-    # #
-    # #
-    # configs['wsize'] = wsize
-    # # configs['shuffle']=shuffle
-    # #
-    # print('los', configs)
-    # muell = provider.get_data(configs)
-    # #
-    # #
-    # # shuffle = True
-    # # configs['shuffle']=shuffle
-    # #
-    # # print('los', configs)
-    # # muell = provider.get_data(configs)
-    # #
-    # #
-    # wsize = 5
-    # # shuffle = False
-    # #
-    # configs['wsize'] = wsize
-    # # configs['shuffle']=shuffle
-    # #
-    # print('los', configs)
-    # muell = provider.get_data(configs)
-    # #
-    # # shuffle = True
-    # # configs['shuffle']=shuffle
-    # #
-    # # print('los', configs)
-    # # muell = provider.get_data(configs)
-    # # del(provider)
-    # # del(muell)
-    # #
-    #
-    # wsize = 30
-    # configs['wsize'] = wsize
-    # print('los', configs)
-    # muell = provider.get_data(configs)

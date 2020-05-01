@@ -70,7 +70,7 @@ class LabelDataHolder:
                 ret = util.fill_frames(actual_frames, supposed_no_frames)  # fill the frames
                 if start + supposed_no_frames > len(labels):
                     ret = ret[:len(labels) - start]
-                    print('Omitting part of vid {}/{} because it goes beyond 12AM'.format(vid, last_vid))
+                    print('Omitting part of vid {}/{} because it goes beyond end time'.format(vid, last_vid))
                     # continue
                 labels[start:start + supposed_no_frames] = ret
         return labels

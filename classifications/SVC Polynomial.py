@@ -13,29 +13,21 @@ get_ipython().run_line_magic('autoreload', '2')
 
 import sys
 sys.path.append('..')
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 
 import vis.classification_vis as cvis
-from Evals import *
-from Data_Provider import *
+from util.eval_utils import *
+from data_creation.data_provider import *
 import util.classification_utils as util
 import util.data_utils as dutil
-import util.label_utils as lutil
-
 
 import numpy as np
-from scipy import interp
 import matplotlib.pyplot as plt
 
-from sklearn import svm, datasets
+from sklearn import svm
 from sklearn.model_selection import StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier
 import os
 
 from itertools import product
-from multiprocessing import Pool
 
 
 # In[3]:

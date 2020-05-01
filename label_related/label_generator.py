@@ -1,6 +1,10 @@
 import numpy as np
-import dask
+import pickle
+import os
+import glob
 import pandas as pd
+from multiprocessing import Pool
+
 
 """
 This class is used to generate usable labels from the data preprocessed by the LabelDataHolder class. 
@@ -16,6 +20,7 @@ class LabelGenerator:
 
     def __init__(self, df):
         self.fps = 30
+        # df['BinnedLabels'] = [pickle.load(open(f, 'rb')) for f in df['BinnedLabels']]
         self.df = df
 
     """
@@ -37,6 +42,8 @@ class LabelGenerator:
             raise NameError('The given method does not exist. Try one of the following: ratio,median.')
         if method is 'median':
             print('Note: The median method is currently a 75 percentile.')
+
+        data = pickle.load(open(data, 'rb'))  # from link to data
         # average "happiness" per second
         happy_portion = np.nanmean(np.array(data, dtype='float'), axis=1)
         non_nans_per_s = np.count_nonzero(~np.isnan(np.array(data, dtype='float')), axis=1)
@@ -72,29 +79,16 @@ class LabelGenerator:
         labels = np.array(labels)
         return labels, good_ratio  # THIS IS NOT USED SO FAR, BUT SHOULD BE.
 
-    # def generate_labels(self, wsize=100, sliding_window=0, method='ratio'):
-    #     curr_data = None
-    #     ratio = None
-    #     for day in self.df['Day']:
-    #         print('Day', day)
-    #         data = self.df[self.df['Day'] == day].BinnedLabels.values[0]
-    #         mat, rat = self._generate_labels_single_day(data, wsize, sliding_window)
-    #         if curr_data is None:
-    #             curr_data = mat
-    #             ratio = rat
-    #         else:
-    #             curr_data = np.append(curr_data, mat, axis=None)
-    #             ratio = np.append(ratio, rat, axis=None)
-    #     return curr_data, ratio
-
     def generate_labels(self, wsize=100, sliding_window=False, method='ratio'):
-        results = []
-        for idx, row in self.df.iterrows():
-            data = row['BinnedLabels']
-            res = dask.delayed(self._generate_labels_single_day)(data, wsize, sliding_window)
-            # res[0] is the data, res[1] are the bad indices
-            results.append([row['Patient'], row['Day'], res[0], res[1]])
-        res = dask.compute(*results)
-        df = pd.DataFrame(res,columns=['Patient','Day','Y','Ratio']).sort_values(
+        data_links = self.df['BinnedLabels'].values
+        pass_me = zip(data_links,[wsize]*len(data_links), [sliding_window]*len(data_links))
+        pats = self.df['Patient']
+        days = self.df['Day']
+        p = Pool(8)
+        res = p.starmap(self._generate_labels_single_day, pass_me)
+        df = pd.DataFrame(res, columns=['Y','Ratio'])
+        df['Patient'] = pats  # we use the fact that map() returns are ordered
+        df['Day'] = days
+        df = df.sort_values(
             ['Day', 'Patient']).reset_index(drop=True)
         return df
