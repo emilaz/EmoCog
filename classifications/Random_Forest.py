@@ -59,16 +59,16 @@ def vis_results(x,y, x_ev, y_ev, configs):
     y_pred_ev = util.get_prediction(classifier,x_ev,best_thr)
 
     #draw pretty plots
-    title = dutil.generate_filename(configs)
-    cvis.score_heatmap(y_pred, y, 'Metrics Train Set '+title)
-    cvis.score_heatmap(y_pred_ev, y_ev, 'Metrics Test Set '+title)
-    cvis.conf_mat(y_pred,y, 'Confusion Matrix Train Set '+title)
-    cvis.conf_mat(y_pred_ev,y_ev,'Confusion Matrix Test Set '+title)
+    title = dutil.generate_graph_link(configs)
+    cvis.score_heatmap(y_pred, y, title + ' Metrics Train Set')
+    cvis.score_heatmap(y_pred_ev, y_ev, title + ' Metrics Test Set')
+    cvis.conf_mat(y_pred,y, title + ' Confusion Matrix Train Set')
+    cvis.conf_mat(y_pred_ev,y_ev, title + ' Confusion Matrix Test Set')
 
-    cvis.plot_roc(x,y,classifier, 'Random Forest ROC Train Set '+title)
-    cvis.plot_roc(x_ev,y_ev,classifier,  'Random Forest ROC Test Set '+title)
-    cvis.plot_pr_curve(x,y,classifier, 'Random Forest PR curve Train Set '+title)
-    cvis.plot_pr_curve(x_ev,y_ev,classifier, 'Random Forest PR curve Test Set '+title)
+    cvis.plot_roc(x,y,classifier, title + ' RF ROC Train Set')
+    cvis.plot_roc(x_ev,y_ev,classifier,  title + ' RF ROC Test Set')
+    cvis.plot_pr_curve(x,y,classifier, title + ' RF PR curve Train Set')
+    cvis.plot_pr_curve(x_ev,y_ev,classifier, title + ' RF PR curve Test Set')
 
     
 def do_all(file, cut, reload= False):
@@ -105,7 +105,7 @@ def randomize_labels(y):
 if __name__ == '__main__':
     files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'af859cc5' in f and '[3, 4, 5]' in f]
     cuts = [.3,.5,.7]
-    reload = [False]
+    reload = [True]
     all_elements = [files,cuts, reload]
 
     file_cut_combos = []

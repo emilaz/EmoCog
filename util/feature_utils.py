@@ -4,26 +4,21 @@ from functools import reduce
 from sklearn.decomposition import PCA
 import pickle
 
-"""
-Standardizes data (demean& unit variance)
-Input: Data, standart deviation of data, mean of data
-"""
-
 
 def standardize(data, std, data_mean):
+    """ Standardizes data (demean& unit variance)
+    Input: Data, standart deviation of data, mean of data
+    """
     data_dem = data - data_mean[:, None]
     data_stand = data_dem / (std[:, None])
     return data_stand
 
 
-"""
-Return indices of bad time points, based on outlier detection
-Input: Data matrix
-Output: Bad indices matrix, same length as data matrix
-"""
-
-
 def detect_artifacts(data_matrix, std_lim=None, med_lim=None):
+    """ Return indices of bad time points, based on outlier detection
+    Input: Data matrix
+    Output: Bad indices matrix, same length as data matrix
+    """
     # first, we only want to look at the high-freq bin:
     high_freqs = data_matrix[7::8, :]
     # next, calculate median std across each channel(should be 1 I think)
@@ -40,22 +35,13 @@ def detect_artifacts(data_matrix, std_lim=None, med_lim=None):
     bad_idx = too_low_idx | too_high_idx  # any index either too high or too low? that is a bad index
     return bad_idx, std_lim, med_lim
 
-
-# def remove_artifacts(data, bad_indices):
-#     good_data = data[:,~bad_indices] #keep only the good indices
-#     return good_data
-
-
-# this function caps at 150Hz, then bins the data in a logarithmic fashion to account for smaller psd values in higher freqs
-"""
-Key function for feature processing. Truncates frequencies above 150Hz, bins the frequencies logarithmically.
-Throws the PSD into these bins by summing all PSD that fall into a certain bin.
-Input: Frequency array, PSD array
-Output: Binned frequencies, binned PSD
-"""
-
-
 def bin_psd(fr, psd):
+    """
+    Key function for feature processing. Truncates frequencies above 150Hz, bins the frequencies logarithmically.
+    Throws the PSD into these bins by summing all PSD that fall into a certain bin.
+    Input: Frequency array, PSD array
+    Output: Binned frequencies, binned PSD
+    """
     fr_trun = fr[fr <= 150]
     fr_total = len(fr_trun)
     fr_bins = np.arange(int(np.log2(max(fr_trun)) + 1))  # just np.arange(no_fr_bins)
@@ -88,15 +74,15 @@ def bin_psd(fr, psd):
     return fr_bins, psd_bins
 
 
-"""
-Function for PCA.
-Given some minimum of explained variance of the data, return the number of components needed (at most 100).
-Input: Data, desired variance explained
-Output: Number of Components needed.
-"""
+
 
 
 def get_no_comps(data, expl_var_lim):
+    """Function for PCA.
+    Given some minimum of explained variance of the data, return the number of components needed (at most 100).
+    Input: Data, desired variance explained
+    Output: Number of Components needed.
+    """
     comps = min(100, min(data.shape))
     pca = PCA(n_components=comps)
     pca.fit(data)
@@ -108,14 +94,11 @@ def get_no_comps(data, expl_var_lim):
     return pca.n_components_
 
 
-"""
-Function to find the indices of channels that were good across days.
-Input: PD Series with good channel info per day
-Output: Good Indices?
-"""
-
-
 def find_common_channels(channels_per_day, additional_channels):
+    """ Function to find the indices of channels that were good across days.
+    Input: PD Series with good channel info per day
+    Output: Good Indices?
+    """
     common = reduce(np.intersect1d, channels_per_day)  # which channels are good on all days?
     if additional_channels is not None:
         common = reduce(np.intersect1d, np.array((common, additional_channels)))
@@ -135,6 +118,11 @@ def find_common_channel_indices(channels_per_day, common_channels):
 
 
 def filter_common_channels(common_df, additional_channels=None):
+    """ This function filters out bad channels across days. For test data, an additional_channels parm is provided
+    :param common_df: the dataframe containing patient, day, goodchans, data columns
+    :param additional_channels: potential additional channels that are used for intersectional filtering
+    :return: a dataframe with filtered channels and data (or rather, links to said data)
+    """
     good_common_chans = find_common_channels(common_df['GoodChans'], additional_channels)
     good_idx_df = find_common_channel_indices(common_df[['Patient', 'Day', 'GoodChans']], good_common_chans)
     new_chan_col = []  # don't modify a df you're iterating over (as per docs)

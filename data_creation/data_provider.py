@@ -5,7 +5,7 @@ import util.data_utils as dutil
 import util.label_utils as lutil
 import itertools
 from data_creation.create_raws import generate_raws
-from data_creation.data_processing import process
+from data_creation.data_processing import process, process_test
 
 
 """
@@ -28,9 +28,9 @@ class DataProvider:
         self.featuregen = None
         self.lablegen = None
 
-    def _load_raws(self, patient, days):
+    def _load_raws(self, patients, days, filter_additional=None):
         # new: create df out of patient/days for using dask then
-        res = generate_raws(patient, days)
+        res = generate_raws(patients, days)
         print('Got single day results, putting it into one DataFrame.')
         columns = ['Patient', 'Day', 'Start', 'End', 'BinnedData', 'BinnedLabels', 'GoodChans']
         all_days_df = pd.DataFrame(res, columns=columns)
@@ -38,7 +38,7 @@ class DataProvider:
         all_days_df = (all_days_df.sort_values(['Patient', 'Day'])).reset_index(drop=True)
         self.all_days_df = all_days_df
         print('Creating the generators..')
-        self.featuregen = FeatureGenerator(all_days_df)
+        self.featuregen = FeatureGenerator(all_days_df, filter_additional=filter_additional)
         self.lablegen = LabelGenerator(all_days_df)
         print('done.')
         # das hier erstmal nicht. spaeter zur analyse vielleicht wieder
@@ -48,23 +48,18 @@ class DataProvider:
     def reload_generators(self):
         self.featuregen = FeatureGenerator(self.all_days_df)
         self.lablegen = LabelGenerator(self.all_days_df)
-        
-    """
-    Function to generate the feats and labels, given the input hyperparas
-    Input:  Configs, i.e. Windowsize, 
-            sliding window, 
-            start and end (in s), 
-            train bool, 
-            variance to be explained, 
-            cutoff if classification.
-    Output: Features, Labels
-    """
+
     def generate_data(self, configs):
+        """ Function to generate the feats and labels, given the input hyperparas
+        Input:  Configs, i.e. Windowsize, sliding window, start and end (in s), train bool, variance to be explained,
+                cutoff if classification.
+        Output: Features, Labels
+        """
         # train data
         if 'expvar' not in configs.keys():
             configs['expvar'] = 95
         # check whether train or test data, set start and end sample accordingly
-        x_df = self.featuregen.generate_features(wsize=configs['wsize'], sliding_window=configs['sliding'])
+        x_df = self.featuregen.gnerate_features(wsize=configs['wsize'], sliding_window=configs['sliding'])
         y_df= self.lablegen.generate_labels(wsize=configs['wsize'], sliding_window=configs['sliding'])
         joined_df = x_df.merge(y_df, on=['Patient','Day'])
         new_col_order = ['Patient','Day','X', 'BadIndices', 'Y', 'Ratio']
@@ -82,9 +77,9 @@ class DataProvider:
 #             preds = preds[~np.isnan(annots)]
 #             annots = annots[~np.isnan(annots)] ###
 #             ClassificationVis.conf_mat(preds, annots)
-        x_tr, y_tr, x_ev, y_ev = process(joined_df,
-                                         self.featuregen.good_channels, configs)
-        return x_tr, y_tr, x_ev, y_ev
+
+        return joined_df
+
 
     def get_data(self, configs, reload=False):
         # if data already exists, simply reload
@@ -100,7 +95,9 @@ class DataProvider:
             if not self.is_loaded:
                 self._load_raws(configs['patient'], configs['days'])
             print('Now generating the actual data..')
-            x_tr, y_tr, x_ev, y_ev = self.generate_data(configs)
+            joined_df = self.generate_data(configs)
+            x_tr, y_tr, x_ev, y_ev = process(joined_df,
+                                             self.featuregen.good_channels, configs)
             print('Done. Saving to file for later use.')
             dutil.save_data_to_file(x_tr, y_tr, x_ev, y_ev, configs)
         # now do the cutoff
@@ -110,6 +107,24 @@ class DataProvider:
             y_tr = lutil.do_cutoff(y_tr, cutoff)
             y_ev = lutil.do_cutoff(y_ev, cutoff)
         return x_tr, y_tr, x_ev, y_ev
+
+
+    def get_test_data(self, configs, path_to_procesing):
+        # First, load processing tools (standardization, common channels, PCA model etc.)
+        tools = dutil.load_processing_tools_from_path(path_to_procesing)
+        print(' Loading raw data into memory...')
+        self._load_raws(configs['patient'], configs['days'], filter_additional=tools['GoodChans'])
+        print('Now generating the actual data..')
+        joined_df = self.generate_data(configs)
+        x, y = process_test(joined_df, configs, tools)
+        # print('Done. Saving to file for later use.')
+        # dutil.save_data_to_file(x_tr, y_tr, x_ev, y_ev, configs)
+        # now do the cutoff
+        if 'cutoff' in configs.keys():
+            cutoff = configs['cutoff']
+            print('Doing cutoff')
+            y = lutil.do_cutoff(y, cutoff)
+        return x, y
 
 
 if __name__ == '__main__':

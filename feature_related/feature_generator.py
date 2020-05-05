@@ -18,11 +18,11 @@ class FeatureGenerator:
     Init function.
     """
 
-    def __init__(self, df):
+    def __init__(self, df, filter_additional=None):
         # sampling frequency and last sample taken
         self.sfreq = 500  # will always be, hopefully lol
         # load raw feat data, filter to common channels, then save to file. This due to big data size
-        self.df = util.filter_common_channels(df)
+        self.df = util.filter_common_channels(df, additional_channels=filter_additional)
 
         self.good_channels = self.df['GoodChans'].iloc[0]
 

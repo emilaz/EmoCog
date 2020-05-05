@@ -47,15 +47,7 @@ def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
     plt.ylim(0,1)
     plt.show()
 
-# def conf_mat(pred,true, title):
-#     tp,fp,fn,tn = get_pos_and_negs(pred,true)
-#     rates = np.array([tp,fp,fn,tn]).reshape((2,2))
-#     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
-#     plt.figure(figsize = (10,7))
-#     sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
-#     plt.title(title)
-#     plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
-#     plt.show()
+
 
 def conf_mat(pred, true, title):
     tn,fp,fn,tp = metrics.confusion_matrix(true, pred).ravel()
@@ -63,8 +55,8 @@ def conf_mat(pred, true, title):
     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
     plt.figure(figsize = (10,7))
     sns.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
-    plt.title(title)
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
+    plt.title(os.path.basename(title))
+    plt.savefig(title + '.png')
     plt.show()
     plt.close()
 
@@ -76,12 +68,13 @@ def score_heatmap(pred, true, title):
     acc = df['accuracy'].values
     del df['accuracy']
     df.loc[len(df)] = [np.nan]*2+[acc[0]]
-    df.rename(columns={'macro avg':'Total', 0.0:'Not happy', 1.0:'Happy'}, index={4:'accuracy'},inplace=True)
+    df.rename(columns={'macro avg':'Total', 0.0:'Not Happy', 1.0:'Happy', '0.0':'Not Happy', '1.0': 'Happy'},
+              index={4:'accuracy'},inplace=True)
     plt.figure(figsize = (10,7))
     sns.heatmap((df.T).round(2),annot=True,cmap='Reds', fmt='g', vmin = 0,vmax=1, annot_kws={"size": 22})
     plt.yticks(rotation=0, fontsize="10", va="center")
-    plt.title(title)
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
+    plt.title(os.path.basename(title))
+    plt.savefig(title + '.png')
     plt.show()
     plt.close()
 
@@ -124,9 +117,9 @@ def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!
     plt.ylim([-0.05, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title(title)
     plt.legend(loc="lower right")
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
+    plt.title(os.path.basename(title))
+    plt.savefig(title + '.png')
     plt.show()
     plt.close()
 
@@ -147,33 +140,12 @@ def plot_pr_curve(x, y, classifier, title):
     plt.ylabel('Precision')
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
-    plt.title(title + ', AP={0:0.2f}'.format(
-              avg_p))
-    plt.savefig(os.path.join('/home/emil/EmoCog/data/new_labels/images',title+'.png'))
+    plt.title(os.path.basename(title) + ', AP={0:0.2f}'.format(avg_p))
+    plt.savefig(title + '.png')
     plt.show()
     plt.close()
 
 
-# def _background_gradient(s, m, M, cmap='PuBu', low=0, high=0):
-#     rng = M - m
-#     norm = colors.Normalize(m - (rng * low),
-#                             M + (rng * high))
-#     normed = norm(s.values)
-#     c = [colors.rgb2hex(x) for x in plt.cm.get_cmap(cmap)(normed)]
-#     return ['background-color: %s' % color for color in c]
-#
-#
-#
-# def print_results(df_res):
-#     pretty = df_res.style.apply(_background_gradient,
-#                cmap='PuBu',
-#                m=df_res.min().min(),
-#                M=df_res.max().max(),
-#                low=0,
-#                high=1)
-#     print(pretty)
-#
-    
     
 """
 Function to plot an average ROC curve, given many random trials of shuffled labels.

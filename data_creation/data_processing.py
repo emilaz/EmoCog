@@ -113,3 +113,23 @@ def process(joined_df, good_chans, configs):
     dutil.save_processing_tools(pca, [std_lim, std_med], [std, mean], good_chans, configs)
     # now ready to return/rumble
     return x_tr, y_tr, x_ev, y_ev
+
+
+def process_test(joined_df, configs, processing_tools):
+    # first, synchronize this shit
+    x_clean, y_clean = util.filter_nans(joined_df)
+
+    # next, filter out the artifacts
+    std_lim, std_med = processing_tools['Artifact Parameter']
+    x_filtered, y_filtered = util.filter_artifacts(x_clean, y_clean, std_lim, std_med)
+
+    # then, do standardizing
+    std, mean = processing_tools['Standardization Parameter']
+    x_filtered = futil.standardize(x_filtered, std, mean)
+
+    # and PCA on feature sets
+    pca = processing_tools['Model']
+    _, x_filtered = setup_pca(x_filtered.T, configs['expvar'], pca)
+
+    # now ready to return/rumble
+    return x_filtered, y_filtered
