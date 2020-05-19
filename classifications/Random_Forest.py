@@ -119,7 +119,7 @@ if __name__ == '__main__':
     for allel in product(*all_elements):
         file_cut_combos += [allel]
 
-    pool = Pool(8)
+    pool = Pool(4)
     yass = pool.starmap(do_all, file_cut_combos)
 
     del pool
