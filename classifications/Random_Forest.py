@@ -33,9 +33,10 @@ def calc_results_and_save(x, y, configs):
     #dataframe for saving results
     results = pd.DataFrame(columns=('Number Estimators','Max Depth','Max Features','AVG PR'))#,'AUC ROC'))
     #do random search on parameters
-    est = np.random.choice(np.arange(130)[5:],25)
-    max_d = np.random.choice(np.arange(60)[1:],25)
-    max_f = np.random.choice(np.arange(min(x.shape))[1:],25)
+    no_params = 25
+    est = np.random.choice(np.arange(130)[5:],no_params)
+    max_d = np.random.choice(np.arange(60)[1:],no_params)
+    max_f = np.random.choice(np.arange(min(x.shape))[1:],no_params)
 
     #Search for best hyperpara combo with cross validation
     for idx,(c,d,f) in enumerate(zip(est,max_d,max_f)):
@@ -103,9 +104,10 @@ def randomize_labels(y):
     
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets') if 'af859cc5' in f and '[3, 4, 5]' in f]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['e5bad52f']")]
     cuts = [.3,.5,.7]
-    reload = [True]
+    # cuts= [.5]
+    reload = [False]
     all_elements = [files,cuts, reload]
 
     file_cut_combos = []

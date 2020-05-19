@@ -36,40 +36,40 @@ def shuffle_data(x, y, ratio):
     return x_tr, y_tr, x_ev, y_ev
 
 
-def apply_processing(x, y, good_chans, other_configs):
-    tools = dutil.load_processing_tools(other_configs)
-    pca = tools['Model']
-    std_lim, std_mean, std, mean = filter_channels_for_standardizing(tools, good_chans)
-    print(std_lim.shape, std_mean.shape)
-    print(std.shape, mean.shape)
-    print(x.shape)
-    artifacts, _, _ = futil.detect_artifacts(x, std_lim, std_mean)
-    x, y = util.filter_artifacts(x, y, artifacts)
-    print('After artfilter', x.shape)
-    x = futil.standardize(x, std, mean)
-    x = pca.transform(x.T)
-    return x, y
+# def apply_processing(x, y, good_chans, other_configs):
+#     tools = dutil.load_processing_tools(other_configs)
+#     pca = tools['Model']
+#     std_lim, std_mean, std, mean = filter_channels_for_standardizing(tools, good_chans)
+#     print(std_lim.shape, std_mean.shape)
+#     print(std.shape, mean.shape)
+#     print(x.shape)
+#     artifacts, _, _ = futil.detect_artifacts(x, std_lim, std_mean)
+#     x, y = util.filter_artifacts(x, y, artifacts)
+#     print('After artfilter', x.shape)
+#     x = futil.standardize(x, std, mean)
+#     x = pca.transform(x.T)
+#     return x, y
 
 
-def filter_channels_for_standardizing(tools, other_good_chans):
-    artifact_paras = tools['Artifact Parameter']
-    standar_paras = tools['Standardization Parameter']
-    orig_good_chans = tools['GoodChans']
-    filter_art = pd.DataFrame(columns=['Day', 'GoodChans', 'BinnedData'])
-    filter_art.loc[0] = [0, orig_good_chans, artifact_paras[0][:, None, None]]
-    filter_art.loc[1] = [1, orig_good_chans, artifact_paras[1][:, None, None]]
-    ret_art = futil.filter_common_channels(filter_art, other_good_chans)
-    std_lim = ret_art.loc[0]['BinnedData'].squeeze()
-    std_mean = ret_art.loc[1]['BinnedData'].squeeze()
-
-    filter_stan = pd.DataFrame(columns=['Day', 'GoodChans'])
-    filter_stan.loc[0] = [0, orig_good_chans]
-    filter_stan.loc[1] = [1, orig_good_chans]
-    common = futil.find_common_channels(filter_stan['GoodChans'], other_good_chans)
-    good_idx = futil.find_common_channel_indices(filter_stan, common)
-    std = standar_paras[0][np.repeat(good_idx['CommonChans'].loc[0], 8)]
-    mean = standar_paras[1][np.repeat(good_idx['CommonChans'].loc[0], 8)]
-    return std_lim, std_mean, std, mean
+# def filter_channels_for_standardizing(tools, other_good_chans):
+#     artifact_paras = tools['Artifact Parameter']
+#     standar_paras = tools['Standardization Parameter']
+#     orig_good_chans = tools['GoodChans']
+#     filter_art = pd.DataFrame(columns=['Day', 'GoodChans', 'BinnedData'])
+#     filter_art.loc[0] = [0, orig_good_chans, artifact_paras[0][:, None, None]]
+#     filter_art.loc[1] = [1, orig_good_chans, artifact_paras[1][:, None, None]]
+#     ret_art = futil.filter_common_channels(filter_art, other_good_chans)
+#     std_lim = ret_art.loc[0]['BinnedData'].squeeze()
+#     std_mean = ret_art.loc[1]['BinnedData'].squeeze()
+#
+#     filter_stan = pd.DataFrame(columns=['Day', 'GoodChans'])
+#     filter_stan.loc[0] = [0, orig_good_chans]
+#     filter_stan.loc[1] = [1, orig_good_chans]
+#     common = futil.find_common_channels(filter_stan['GoodChans'], other_good_chans)
+#     good_idx = futil.find_common_channel_indices(filter_stan, common)
+#     std = standar_paras[0][np.repeat(good_idx['CommonChans'].loc[0], 8)]
+#     mean = standar_paras[1][np.repeat(good_idx['CommonChans'].loc[0], 8)]
+#     return std_lim, std_mean, std, mean
 
 
 def process(joined_df, good_chans, configs):
@@ -121,7 +121,8 @@ def process_test(joined_df, configs, processing_tools):
 
     # next, filter out the artifacts
     std_lim, std_med = processing_tools['Artifact Parameter']
-    x_filtered, y_filtered = util.filter_artifacts(x_clean, y_clean, std_lim, std_med)
+    artifacts, _, _ = futil.detect_artifacts(x_clean, std_lim, std_med)
+    x_filtered, y_filtered = util.filter_artifacts(x_clean, y_clean, artifacts)
 
     # then, do standardizing
     std, mean = processing_tools['Standardization Parameter']

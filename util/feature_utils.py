@@ -130,17 +130,35 @@ def filter_common_channels(common_df, additional_channels=None):
     for idx, row in good_idx_df.iterrows():
         pat = row['Patient']
         day = row['Day']
-        good = good_idx_df[(good_idx_df['Patient'] == pat) & (good_idx_df['Day'] == day)]['CommonChans'].iloc[0]
+        good = good_idx_df[(good_idx_df['Patient'] == pat) &
+                           (good_idx_df['Day'] == day)]['CommonChans'].iloc[0]  # True/False array
+
         data_link = common_df[(common_df['Patient'] == pat) & (common_df['Day'] == day)]['BinnedData'].iloc[0]
         new_data = pickle.load(open(data_link,'rb'))
         new_data = new_data[good, :, :]
-        # write to file
+        filtered_chans = common_df.loc[(common_df['Patient'] == pat) &
+                                       (common_df['Day'] == day)]['GoodChans'].iloc[0][good]  # channels
+        # sort the order of electrodes to be consistent
+        if idx == 0:
+            first_order = {k: v for v, k in enumerate(filtered_chans)}  # these are chan-index pairs
+        else:
+            new_order = [first_order[ent] for ent in filtered_chans]  # these are indices
+            # just a safety measure here
+            if (filtered_chans != filtered_chans[new_order]).any():
+                print('Order of channels seem to be different across patients/days? Check!')
+                print(filtered_chans, 'current')
+                print(new_chan_col[0], 'reference')
+            if (new_order != np.arange(len(new_order))).any():
+                print('If we didnt go into the first if clause, we shouldnt be here either. Check!')
+                print(new_order)
+            filtered_chans = filtered_chans[new_order]
+            new_data = new_data[new_order]
+        # save data to file
         feat_link = '/home/emil/EmoCog/data/temporary/' + str(row['Patient']) + str(row['Day']) + 'feat_filtered.pkl'
         with open(feat_link, "wb") as f:
             print('pickling filtered feat data...')
             pickle.dump(new_data, f, protocol=pickle.HIGHEST_PROTOCOL)
         new_df_col.append(feat_link)
-        filtered_chans = common_df.loc[(common_df['Patient'] == pat) & (common_df['Day'] == day)]['GoodChans'].iloc[0][good]
         new_chan_col.append(filtered_chans)
     common_df = common_df.assign(BinnedData=new_df_col, GoodChans=new_chan_col)
     return common_df

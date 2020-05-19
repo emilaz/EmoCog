@@ -3,6 +3,7 @@ import numpy as np
 import os
 import ast
 import pickle
+import glob
 
 
 def generate_filename(configs, cut=True):
@@ -59,7 +60,7 @@ def save_data_to_file(x, y, x_ev, y_ev, configs):
     Output: None
     """
     fname = generate_filename(configs, False)
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets', fname)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets',configs['patient'], fname)
     # save stuff to file:
     df = pd.DataFrame(data=[[x, y, x_ev, y_ev]], columns=['x_tr', 'y_tr', 'x_ev', 'y_ev'])
     df.to_hdf(link, key='df')
@@ -72,7 +73,7 @@ def load_data_from_file(configs):
     Output: Train and test data according to these configs
     """
     fname = generate_filename(configs, False)
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets', fname)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets',configs['patient'], fname)
     print(link)
     df = pd.read_hdf(link)
     x = df['x_tr'][0]
@@ -103,9 +104,10 @@ def save_results(df, configs, methodtype):
     Output: None
     """
     fname = generate_filename(configs)
-    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/results/', methodtype)):
-        os.mkdir('/home/emil/EmoCog/data/new_labels/results/' + methodtype)
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/results/', methodtype, fname)
+    path = os.path.join('/home/emil/EmoCog/data/new_labels/results/', configs['patient'], methodtype)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/results/', configs['patient'], methodtype, fname)
     df.to_hdf(link, key='df')
 
 
@@ -116,7 +118,7 @@ def load_results(configs, methodtype):
     Output: Dataframe with results
     """
     fname = generate_filename(configs)
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/results', methodtype, fname)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/results', configs['patient'], methodtype, fname)
     df = pd.read_hdf(link)
     return df
 
@@ -129,9 +131,9 @@ def save_processing_tools(pca, artifact_paras, standard_paras, good_chans, confi
     Output: None
     """
     fname = generate_filename(configs) + '.pkl'
-    if not os.path.exists('/home/emil/EmoCog/data/new_labels/pca_models'):
-        os.mkdir('/home/emil/EmoCog/data/new_labels/pca_models')
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/pca_models', fname)
+    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/pca_models', configs['patient'])):
+        os.mkdir(os.path.join('/home/emil/EmoCog/data/new_labels/pca_models', configs['patient']))
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/pca_models', configs['patient'], configs['patient'], fname)
     tools = {'Model': pca, 'Artifact Parameter': artifact_paras, 'Standardization Parameter': standard_paras,
              'GoodChans': good_chans}
     with open(link, "wb") as f:
@@ -145,10 +147,11 @@ def load_processing_tools(configs):
     Output: Trained PCA model, artifact parameter, standardization parameter
     """
     fname = generate_filename(configs, False) + '.pkl'
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/pca_models', fname)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/pca_models', configs['patient'], fname)
     with open(link, "rb") as f:
         tools = pickle.load(f)
     return tools
+
 
 def load_processing_tools_from_path(path):
     """
@@ -168,9 +171,9 @@ def save_classifier(classifier, best_thr, configs, methodtype):
     Output: None
     """
     fname = generate_filename(configs) + '.pkl'
-    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/classifier', methodtype)):
-        os.mkdir(os.path.join('/home/emil/EmoCog/data/new_labels/classifier', methodtype))
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/classifier', methodtype, fname)
+    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/classifier', configs['patient'], methodtype)):
+        os.makedirs(os.path.join('/home/emil/EmoCog/data/new_labels/classifier', configs['patient'], methodtype))
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/classifier', configs['patient'], methodtype, fname)
     classifier_stuff = {'classifier': classifier, 'threshold': best_thr}
     with open(link, "wb") as f:
         pickle.dump(classifier_stuff, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -183,7 +186,7 @@ def load_classifier(configs, methodtype):
     Output: Classifier with results
     """
     fname = generate_filename(configs) + '.pkl'
-    link = os.path.join('/home/emil/EmoCog/data/new_labels/classifier', methodtype, fname)
+    link = os.path.join('/home/emil/EmoCog/data/new_labels/classifier', configs['patient'], methodtype, fname)
     with open(link, "rb") as f:
         classifier_stuff = pickle.load(f)
     return classifier_stuff['classifier'], classifier_stuff['threshold']
@@ -203,3 +206,9 @@ def generate_graph_link(configs):
             new_dict[k] = v
     fil = generate_filename(new_dict)
     return os.path.join(path, fil)
+
+
+def remove_temporary_data():
+    print('Deleting temporary data.')
+    temporary_files = glob.glob('/home/emil/EmoCog/data/temporary/*')
+    [os.remove(t) for t in temporary_files]

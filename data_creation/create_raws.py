@@ -2,6 +2,7 @@ import util.sync_utils as sutil
 from feature_related.feature_data_holder import FeatDataHolder
 from label_related.label_data_holder import LabelDataHolder
 import pickle
+import numpy as np
 import os
 import pandas as pd
 from multiprocessing import Pool
@@ -34,7 +35,7 @@ def _generate_raws_single_day(patient, day, overwrite=False):
                                                      label_data.get_pred_bin(),
                                                      overwrite=True)
         ret = [patient, day, realtime_start, realtime_end, feat_link,
-               label_link, feat_data.chan_labels]
+               label_link, np.array([f.upper() for f in feat_data.chan_labels])]
 
         # ret = [patient, day, realtime_start, realtime_end, feat_data.get_bin_data(),
         #        label_data.get_pred_bin(), feat_data.chan_labels]

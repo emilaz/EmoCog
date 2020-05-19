@@ -29,6 +29,9 @@ class FeatDataHolder:
         self.data,self.bad_chan= preprocessor.preprocess(prefiltered_sd_kurt=True)
         self.data = self.data[self.bad_chan!=True]
         self.chan_labels = np.array([c for c in chan_info.columns])[self.bad_chan!=True]
+        if len(self.data.flatten()) % 500 != 0:
+            raise ValueError('The features data here does not have the correct shape for some reason. '
+                             'Shape: {}, path {}'.format(self.data.shape,path))
         self.data_bin=self._bin_data()
         
 

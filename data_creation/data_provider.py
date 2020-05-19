@@ -3,6 +3,7 @@ from label_related.label_generator import LabelGenerator
 import pandas as pd
 import util.data_utils as dutil
 import util.label_utils as lutil
+import sys
 import itertools
 from data_creation.create_raws import generate_raws
 from data_creation.data_processing import process, process_test
@@ -49,7 +50,7 @@ class DataProvider:
         self.featuregen = FeatureGenerator(self.all_days_df)
         self.lablegen = LabelGenerator(self.all_days_df)
 
-    def generate_data(self, configs):
+    def create_unprocessed_data(self, configs):
         """ Function to generate the feats and labels, given the input hyperparas
         Input:  Configs, i.e. Windowsize, sliding window, start and end (in s), train bool, variance to be explained,
                 cutoff if classification.
@@ -59,14 +60,13 @@ class DataProvider:
         if 'expvar' not in configs.keys():
             configs['expvar'] = 95
         # check whether train or test data, set start and end sample accordingly
-        x_df = self.featuregen.gnerate_features(wsize=configs['wsize'], sliding_window=configs['sliding'])
+        x_df = self.featuregen.generate_features(wsize=configs['wsize'], sliding_window=configs['sliding'])
         y_df= self.lablegen.generate_labels(wsize=configs['wsize'], sliding_window=configs['sliding'])
         joined_df = x_df.merge(y_df, on=['Patient','Day'])
         new_col_order = ['Patient','Day','X', 'BadIndices', 'Y', 'Ratio']
         joined_df = joined_df.reindex(columns=new_col_order)
-        print(joined_df.columns)
-        joined_df.to_hdf('/home/emil/data/check_me_out.hdf', key='df')
-        print('saved')
+        # joined_df.to_hdf('/home/emil/data/check_me_out.hdf', key='df')
+        # print('saved')
 
         # annots, _ = self.annotsgen.generate_labels(configs['wsize'], start=start,end=end, sliding_window=configs['sliding'])
 #         if self.draw:
@@ -79,7 +79,6 @@ class DataProvider:
 #             ClassificationVis.conf_mat(preds, annots)
 
         return joined_df
-
 
     def get_data(self, configs, reload=False):
         # if data already exists, simply reload
@@ -95,7 +94,7 @@ class DataProvider:
             if not self.is_loaded:
                 self._load_raws(configs['patient'], configs['days'])
             print('Now generating the actual data..')
-            joined_df = self.generate_data(configs)
+            joined_df = self.create_unprocessed_data(configs)
             x_tr, y_tr, x_ev, y_ev = process(joined_df,
                                              self.featuregen.good_channels, configs)
             print('Done. Saving to file for later use.')
@@ -115,7 +114,7 @@ class DataProvider:
         print(' Loading raw data into memory...')
         self._load_raws(configs['patient'], configs['days'], filter_additional=tools['GoodChans'])
         print('Now generating the actual data..')
-        joined_df = self.generate_data(configs)
+        joined_df = self.create_unprocessed_data(configs)
         x, y = process_test(joined_df, configs, tools)
         # print('Done. Saving to file for later use.')
         # dutil.save_data_to_file(x_tr, y_tr, x_ev, y_ev, configs)
@@ -131,8 +130,10 @@ if __name__ == '__main__':
 
     provider = DataProvider()
 
-    patient = ['cb46fd46','af859cc5']
-    days = [[3,4,5,6,7],[3,4,5]]
+    patient = ['e5bad52f']
+    days = [[3,4,5,6,7]]
+    # patient = ['cb46fd46', 'af859cc5']
+    # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
     wsize = 100
     sliding = 25
     shuffle = False
@@ -148,8 +149,13 @@ if __name__ == '__main__':
     configs['shuffle'] = shuffle
     print('los', configs)
     #provider.reload_generators()
-    muell = provider.get_data(configs)
+    provider.get_data(configs)
+    # muell = provider.get_test_data(configs,
+    #                                "/home/emil/EmoCog/data/new_labels/pca_models/"
+    #                                "patient_['cb46fd46', 'af859cc5']_days_[[3, 4, 5, 6, 7],"
+    #                                " [3, 4, 5]]_wsize_100_sliding_25_expvar_90_ratio_0.8_shuffle_False.pkl")
 
+    #
     wsizes = [100, 50, 30, 5]
     shuffle = [True, False]
     combos = itertools.product(wsizes, shuffle)
@@ -159,4 +165,5 @@ if __name__ == '__main__':
         configs['shuffle'] = c[1]
         provider.get_data(configs)
 
-
+    dutil.remove_temporary_data()
+    sys.exit(0)

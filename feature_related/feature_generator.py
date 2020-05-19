@@ -5,8 +5,7 @@ import pickle
 from multiprocessing import Pool
 import pandas as pd
 import util.feature_utils as util
-import os
-import glob
+
 
 """
 Class to generate features. Uses preprocessed data held in memory by FeatDataHolder class.
