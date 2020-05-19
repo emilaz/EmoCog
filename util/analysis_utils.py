@@ -6,7 +6,7 @@ import util.data_utils as dutil
 
 
 def get_important_electrodes_bins_goodchans(configs):
-    #first, we need to know which principal directions were important for the RF classifier. So, load classifier
+    # first, we need to know which principal directions were important for the RF classifier. So, load classifier
     classifier_stuff = dutil.load_classifier(configs,'RF')
     pca_stuff = dutil.load_processing_tools(configs)
 
@@ -17,7 +17,7 @@ def get_important_electrodes_bins_goodchans(configs):
     importances = classifier.feature_importances_
     loadings = abs(pca.components_)
 
-    #ok now how does this work? first, which components had importance at all, and how much?
+    # ok now how does this work? first, which components had importance at all, and how much?
     weighted_loadings = importances[:,None] * loadings
 
     #sum the contribution*importance over all PC's

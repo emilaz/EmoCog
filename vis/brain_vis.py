@@ -94,7 +94,7 @@ def plot_brain_new(h5_fn=None,chan_labels='all',num_grid_chans=64,colors=None,no
     NOTE: If running in Jupyter, use '%matplotlib inline' instead of '%matplotlib notebook'
     """ 
     
-    h5_fn = '/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_3.h5'
+    # h5_fn = '/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_3.h5'
     #Load channel locations
     chan_info = pd.read_hdf(h5_fn,key='chan_info',mode='r')
     
