@@ -11,11 +11,11 @@ from util.analysis_utils import get_important_electrodes_bins_goodchans
 
 
 
-def plot_all(configs):
+def plot_all(link_to_ecog_file, configs):
     imp_electrodes, imp_bins, good_chans = get_important_electrodes_bins_goodchans(configs)
     plot_important_frequencies(imp_bins)
     plot_important_electrodes(imp_electrodes,good_chans)
-    plot_brain_new(chan_labels = good_chans, colors = imp_electrodes)
+    plot_brain_new(h5_fn= link_to_ecog_file, chan_labels = good_chans, colors = imp_electrodes)
     
     
 
@@ -175,7 +175,7 @@ def plot_brain_new(h5_fn=None,chan_labels='all',num_grid_chans=64,colors=None,no
     
     #Decide whether to plot L or R hemisphere based on x coordinates
     if len(sides_2_display)>1:
-        N,axes,sides_2_display = _setup_subplot_view(locs,sides_2_display,figsize)
+        N, fig, axes,sides_2_display = _setup_subplot_view(locs,sides_2_display,figsize)
     else:
         N = 1
         axes = ax_in
@@ -227,7 +227,9 @@ def plot_brain_new(h5_fn=None,chan_labels='all',num_grid_chans=64,colors=None,no
     
     #Plot the result
     _plot_electrodes(locs2,node_size,colors2,axes,sides_2_display,N,node_edge_colors,alpha,edge_linewidths)
-    
+    add_colorbar(fig, min(colors2), max(colors2), 'viridis', label_name='')
+
+
 def _setup_subplot_view(locs,sides_2_display,figsize):
     """
     Decide whether to plot L or R hemisphere based on x coordinates
@@ -250,7 +252,7 @@ def _setup_subplot_view(locs,sides_2_display,figsize):
         fig,axes=plt.subplots(1,N, figsize=figsize)
     else:
         fig,axes=plt.subplots(1,N, figsize=figsize)
-    return N,axes,sides_2_display
+    return N, fig, axes,sides_2_display
 
 
 def _plot_electrodes(locs,node_size,colors,axes,sides_2_display,N,node_edge_colors,alpha,edge_linewidths):
@@ -268,7 +270,8 @@ def _plot_electrodes(locs,node_size,colors,axes,sides_2_display,N,node_edge_colo
         for ind,colspan in enumerate(colspans):
             axes[ind]=plt.subplot2grid((1,total_colspans), (0,current_col), colspan=colspan, rowspan=1)
             ni_plt.plot_connectome(np.eye(locs.shape[0]), locs, output_file=None,
-                               node_kwargs={'alpha': alpha, 'edgecolors': node_edge_colors,'linewidths':edge_linewidths},
+                               node_kwargs={'alpha': alpha, 'edgecolors': node_edge_colors,'linewidths':edge_linewidths,
+                                            'cmap': 'viridis'},
                                node_size=node_size, node_color=colors,axes=axes[ind],display_mode=sides_2_display[ind])
             current_col+=colspan
     else:
@@ -277,3 +280,46 @@ def _plot_electrodes(locs,node_size,colors,axes,sides_2_display,N,node_edge_colo
                                    node_kwargs={'alpha': alpha, 'edgecolors': node_edge_colors,'linewidths':edge_linewidths},
                                    node_size=node_size, node_color=colors,axes=axes[i],display_mode=sides_2_display[i])
 
+
+def add_colorbar(f_in,vmin,vmax,cmap,width=0.025,height=0.16,horiz_pos=.905,border_width=1.5,
+                 tick_len = 0,adjust_subplots_right=0.84,label_name='',tick_fontsize=14,
+                 label_fontsize=18,label_pad=15,label_y=0.6,label_rotation=0,fontweight='bold',
+                 fontname='Times New Roman'):
+    '''
+    Adds colorbar to existing plot based on vmin, vmax, and cmap
+    '''
+    f12636, a14u3u43 = plt.subplots(1,1,figsize=(0,0))
+    im = a14u3u43.imshow(np.random.random((10,10)), vmin=vmin, vmax=vmax, cmap=cmap)
+    plt.close(f12636)
+    f_in.subplots_adjust(right=adjust_subplots_right)
+    vert_pos = (1-height)/2
+    cbar_ax = f_in.add_axes([horiz_pos, vert_pos, width, height])
+    cbar = f_in.colorbar(im, cax=cbar_ax)
+    cbar.set_ticks([vmin,0,vmax])
+    cbar.ax.set_yticklabels(['{:.2f}'.format(vmin),0,'{:.2f}'.format(vmax)], fontsize=tick_fontsize,
+                            weight=fontweight, fontname=fontname)
+    cbar.ax.tick_params(length=tick_len)
+    cbar.outline.set_linewidth(border_width)
+    cbar.set_label(label_name,rotation=label_rotation,fontsize=label_fontsize,
+                   weight=fontweight,labelpad=label_pad, y=label_y, fontname=fontname)
+
+if __name__ == '__main__':
+    patient = ['cb46fd46']
+    days = [[3,4,5,6,7]]
+    wsize = 100
+    sliding = 25
+    shuffle = False
+    expvar = 90
+    ratio = .8
+    configs = dict()
+    configs['patient'] = patient
+    configs['days'] = days
+    configs['wsize'] = wsize
+    configs['sliding'] = sliding
+    configs['expvar'] = expvar
+    configs['ratio'] = ratio
+    configs['shuffle'] = shuffle
+    configs['cutoff'] = .3
+    print('los', configs)
+    h5_fn = '/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_3.h5'
+    plot_all(h5_fn, configs)

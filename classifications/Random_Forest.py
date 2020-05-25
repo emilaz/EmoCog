@@ -47,10 +47,7 @@ def calc_results_and_save(x, y, configs):
         # auc_roc =util.get_auc_score(classifier, cv, x, y, go_after_pr=False)
         results.loc[idx] = [c, d, f, auc_pr]
         print('Number Estimators= %d, Max Depth = %d, Max Feat = %d, AUC PR %.3f' % (c, d, f, auc_pr))
-    # if shuff:
-    #     dutil.save_results(results,configs,'RF_Shuffle') # save results for later use
-    else:
-        dutil.save_results(results, configs, 'RF')  # save results for later use
+    dutil.save_results(results, configs, 'RF')  # save results for later use
     return results
 
 
@@ -109,17 +106,17 @@ def randomize_labels(y):
 
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['af859cc5']")]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
+             if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
     cuts = [.3, .5, .7]
-    # cuts= [.5]
-    reload = [False]
+    reload = [True]
     all_elements = [files, cuts, reload]
 
     file_cut_combos = []
     for allel in product(*all_elements):
         file_cut_combos += [allel]
 
-    pool = Pool(4)
+    pool = Pool(8)
     yass = pool.starmap(do_all, file_cut_combos)
 
     del pool

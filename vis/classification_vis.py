@@ -126,7 +126,7 @@ def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!
 
 def plot_pr_curve(x, y, classifier, title):
     y_probs = classifier.predict_proba(x)
-    avg_p  = average_precision_score(y,y_probs[:,1]) #get the average precision score
+    avg_p = average_precision_score(y,y_probs[:,1]) #get the average precision score
     precision, recall, _ = precision_recall_curve(y, y_probs[:,1])
     #step_kwargs = ({'step': 'post'}
     #       if 'step' in signature(plt.fill_between).parameters
