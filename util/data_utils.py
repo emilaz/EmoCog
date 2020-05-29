@@ -212,3 +212,7 @@ def remove_temporary_data():
     print('Deleting temporary data.')
     temporary_files = glob.glob('/home/emil/EmoCog/data/temporary/*')
     [os.remove(t) for t in temporary_files]
+
+def get_h5fn_file(patient):
+    h5_fn = '/nas/ecog_project/derived/processed_ecog/' + str(patient) +'/full_day_ecog/'+ str(patient) + '_fullday_3.h5'
+    return h5_fn

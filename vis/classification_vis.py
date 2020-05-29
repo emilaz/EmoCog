@@ -49,19 +49,19 @@ def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
 
 
 
-def conf_mat(pred, true, title):
+def conf_mat(pred, true, path, title):
     tn,fp,fn,tp = metrics.confusion_matrix(true, pred).ravel()
     rates = np.array([tp,fp,fn,tn]).reshape((2,2))
     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
     plt.figure(figsize = (10,7))
     sns.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
-    plt.title(os.path.basename(title))
-    plt.savefig(title + '.png')
+    plt.title(title)
+    plt.savefig(path + '.png')
     plt.show()
     plt.close()
 
 
-def score_heatmap(pred, true, title):
+def score_heatmap(pred, true, path, title):
     met_dict = metrics.classification_report(true, pred, output_dict=True)
     df = pd.DataFrame(met_dict)
     del df['weighted avg']
@@ -73,13 +73,13 @@ def score_heatmap(pred, true, title):
     plt.figure(figsize = (10,7))
     sns.heatmap((df.T).round(2),annot=True,cmap='Reds', fmt='g', vmin = 0,vmax=1, annot_kws={"size": 22})
     plt.yticks(rotation=0, fontsize="10", va="center")
-    plt.title(os.path.basename(title))
-    plt.savefig(title + '.png')
+    plt.title(title)
+    plt.savefig(path + '.png')
     plt.show()
     plt.close()
 
 
-def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!!
+def plot_roc(x,y,classifier,  path, title): #the classifier has to be pretrained here!!
     cv = StratifiedKFold(n_splits=10, shuffle=False)
     tprs = []
     aucs = []
@@ -96,7 +96,7 @@ def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!
         roc_auc = auc(fpr, tpr)
         aucs.append(roc_auc)
         i += 1
-
+    plt.figure(figsize = (10,7))
     plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
               label='Chance', alpha=.8)
 
@@ -118,13 +118,13 @@ def plot_roc(x,y,classifier,  title): #the classifier has to be pretrained here!
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.legend(loc="lower right")
-    plt.title(os.path.basename(title))
-    plt.savefig(title + '.png')
+    plt.title(title)
+    plt.savefig(path + '.png')
     plt.show()
     plt.close()
 
 
-def plot_pr_curve(x, y, classifier, title):
+def plot_pr_curve(x, y, classifier, path, title):
     y_probs = classifier.predict_proba(x)
     avg_p = average_precision_score(y,y_probs[:,1]) #get the average precision score
     precision, recall, _ = precision_recall_curve(y, y_probs[:,1])
@@ -132,6 +132,7 @@ def plot_pr_curve(x, y, classifier, title):
     #       if 'step' in signature(plt.fill_between).parameters
     #       else {})
     step_kwargs = ({'step': 'post'})
+    plt.figure(figsize=(10,7))
     plt.step(recall, precision, color='b', alpha=0.2,
              where='post')
     plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
@@ -140,8 +141,8 @@ def plot_pr_curve(x, y, classifier, title):
     plt.ylabel('Precision')
     plt.ylim([0.0, 1.05])
     plt.xlim([0.0, 1.0])
-    plt.title(os.path.basename(title) + ', AP={0:0.2f}'.format(avg_p))
-    plt.savefig(title + '.png')
+    plt.title(title + ', AP={0:0.2f}'.format(avg_p))
+    plt.savefig(path + '.png')
     plt.show()
     plt.close()
 

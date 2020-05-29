@@ -28,7 +28,11 @@ def get_important_electrodes_bins_goodchans(configs):
 
     # now, get the contribution of each electrode. take into account that each electrode has 8 bins
     imp_electrodes = np.sum(sum_loadings.reshape(8,-1),axis=0)
+    # normalize
+    imp_electrodes = imp_electrodes / max(imp_electrodes)
     # then, get the contribution of each frequency bin. take
     imp_bin = np.sum(sum_loadings.reshape(8,-1),axis=1)
+    # normalize
+    imp_bin = imp_bin / max(imp_bin)
     return imp_electrodes, imp_bin, good_chans
 

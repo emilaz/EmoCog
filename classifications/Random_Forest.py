@@ -60,18 +60,20 @@ def vis_results(x, y, x_ev, y_ev, configs):
 
     # draw pretty plots
     title = dutil.generate_graph_link(configs)
-    cvis.score_heatmap(y_pred, y, title + ' Metrics Train Set')
-    cvis.score_heatmap(y_pred_ev, y_ev, title + ' Metrics Test Set')
-    cvis.conf_mat(y_pred, y, title + ' Confusion Matrix Train Set')
-    cvis.conf_mat(y_pred_ev, y_ev, title + ' Confusion Matrix Test Set')
+    cvis.score_heatmap(y_pred, y, title + ' Metrics Train Set', 'Metrics Train Set')
+    cvis.score_heatmap(y_pred_ev, y_ev, title + ' Metrics Test Set', 'Metrics Test Set')
+    cvis.conf_mat(y_pred, y, title + ' Confusion Matrix Train Set', 'Confusion Matrix Train Set')
+    cvis.conf_mat(y_pred_ev, y_ev, title + ' Confusion Matrix Test Set', 'Confusion Matrix Test Set')
 
-    cvis.plot_roc(x, y, classifier, title + ' RF ROC Train Set')
-    cvis.plot_roc(x_ev, y_ev, classifier, title + ' RF ROC Test Set')
-    cvis.plot_pr_curve(x, y, classifier, title + ' RF PR curve Train Set')
-    cvis.plot_pr_curve(x_ev, y_ev, classifier, title + ' RF PR curve Test Set')
+    cvis.plot_roc(x, y, classifier, title + ' ROC Train Set', 'ROC Train Set')
+    cvis.plot_roc(x_ev, y_ev, classifier, title + ' ROC Test Set', 'ROC Test Set')
+    cvis.plot_pr_curve(x, y, classifier, title + ' Precision Recall Curve Train Set', 'Precision Recall Curve Train Set')
+    cvis.plot_pr_curve(x_ev, y_ev, classifier, title + ' Precision Recall Curve Test Set', 'Precision Recall Curve Test Set')
 
-    #draw brain map and the most important hyperparameter
-
+    # draw brain map and the most important hyperparameter
+    # get brain map
+    h5_fn = dutil.get_h5fn_file(configs['patient'][2:-2])
+    bvis.plot_all(h5_fn, configs)
 
 def do_all(file, cut, reload=False):
     provider = DataProvider()
@@ -81,8 +83,8 @@ def do_all(file, cut, reload=False):
     print(x.shape, y.shape, x_ev.shape, y_ev.shape)
     if reload:
         try:
-            res = dutil.load_results(configs, 'RF')
-        # this assumes we just want to visualize. If you want to actually calulcate here, do differently
+            dutil.load_results(configs, 'RF')
+        # this assumes we just want to visualize
         except FileNotFoundError as e:
             print(configs)
             print(e)
@@ -106,8 +108,9 @@ def randomize_labels(y):
 
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
-             if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
+    # files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
+    #          if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['e5bad52f']")]
     cuts = [.3, .5, .7]
     reload = [True]
     all_elements = [files, cuts, reload]
