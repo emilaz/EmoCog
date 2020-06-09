@@ -1,6 +1,9 @@
+import h5py
 import numpy as np
 import pandas as pd
 import os
+from math import ceil
+from datetime import datetime
 
 """
 Given a day, finds the corresponding video file I guess
@@ -28,36 +31,73 @@ def find_paths(patient_name, day_no):
     return ecog_path, video_path
 
 
-"""
-This function finds out how many seconds into the day the first session of day started and when it ended
-Input: Path to video session hdf file
-Output: Seconds passed since midnight until video session began
-"""
+def find_start_and_end_time(vid_path, ecog_path, day_start=7, day_end=23):
+    vid_start, vid_end = find_start_and_end_time_video(vid_path)
+    if vid_start < day_start * 3600:  # if it's before 7AM, reset it to 7 AM
+        vid_start = day_start * 3600
+    if vid_end > day_end * 3600:
+        vid_end = day_end * 3600  # if it's after 23PM, reset to 23PM
+    ecog_start = find_start_and_end_time_ecog(ecog_path)
+    if ecog_start > vid_start:  # they will be perfectly synchronized afterwards (starting at a full sec)
+        vid_start = ceil(ecog_start)
+        ecog_start = vid_start - ecog_start
+    else:
+        ecog_start = vid_start - ecog_start  # there will be a minimal delay between the two
+    # start should be whatever comes later
+    # this could be earlier than vid end. check for this during usage and potentially skip file.
+    ecog_end = vid_end - vid_start + ecog_start
+    return vid_start, ecog_start, vid_end, ecog_end
 
-
-def find_start_and_end_time(vid_path):
+def find_start_and_end_time_video(vid_path):
+    """
+    This function finds out how many seconds into the day the first session of day started and when it ended
+    The microseconds are not important, as while creating the labels, the actual times are again used. Only for lower
+    boundary, as reference on ecog side.
+    Input: Path to video session hdf file
+    Output: Seconds passed since midnight until video session began
+    """
     store = pd.HDFStore(vid_path, 'r')
     # first, where is the start of the video, in secs?
-    start_time = store.select('df', stop=1)['steve_time'].iloc[0]
-    start_seconds = in_seconds(start_time)
+    start_time_video = store.select('df', stop=1)['steve_time'].iloc[0]
+    start_seconds = in_seconds(start_time_video)  # returns a float including microseconds
     # now for the end of the video. First, check if still same day
     nrows = store.get('df').shape[0]
     # this is beginning of last video. since we might be going into next day, we won't use the last vid
-    end_time = (store.select('df', start=nrows - 1, stop=nrows)['steve_time'].iloc[0])
+    end_time_video = (store.select('df', start=nrows - 1, stop=nrows)['steve_time'].iloc[0])
     remaining_frames = (store.select('df', start=nrows - 1, stop=nrows)['frame'].iloc[0])
-    end_seconds = in_seconds(end_time) + remaining_frames / 30
+    end_seconds = in_seconds(end_time_video) + remaining_frames / 30
     store.close()
     return int(start_seconds), int(end_seconds)
 
-
-"""
-Simple conversion of timestamp to total seconds since midnight 
-"""
+def find_start_and_end_time_ecog(ecog_path):
+    """
+    This functions returns the start times for ecog for a given day.
+    :param ecog_path: path to ecog file for given day
+    :return: time in seconds with microseconds in float
+    """
+    file = h5py.File(ecog_path,'r')
+    timestamp = file['start_timestamp'][()]
+    utc_time = datetime.utcfromtimestamp(timestamp)
+    start_seconds = in_seconds(utc_time)
+    return start_seconds
 
 
 def in_seconds(time):
+    """
+    Simple conversion of timestamp to total seconds (and microseconds) since midnight
+    """
     return (time.hour * 60 + time.minute) * 60 + time.second + time.microsecond * 1e-6
 
+
+def unix_to_utc(time):
+    """
+    Function that converts unix timestamp into utc time
+    :param time: unixtimestamp
+    :return: UTC time
+    """
+    ts = ceil(time)
+
+    print(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
 
 """
 Function to filter bad/faulty data points. 

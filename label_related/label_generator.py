@@ -53,7 +53,7 @@ class LabelGenerator:
         while True:
             stop = time_it + wsize
             if stop > data.shape[0]:
-                print('This day gave us {} secs worth of data'.format( data.shape[0] - 1))
+                print('This day gave us {} secs worth of data'.format(data.shape[0] - 1))
                 break
             curr_data = happy_portion[time_it:stop]
             curr_non_nans = np.sum(non_nans_per_s[time_it:stop])
@@ -81,14 +81,13 @@ class LabelGenerator:
 
     def generate_labels(self, wsize=100, sliding_window=False, method='ratio'):
         data_links = self.df['BinnedLabels'].values
-        pass_me = zip(data_links,[wsize]*len(data_links), [sliding_window]*len(data_links))
+        pass_me = zip(data_links,[wsize] * len(data_links), [sliding_window]*len(data_links))
         pats = self.df['Patient']
         days = self.df['Day']
         p = Pool(8)
         res = p.starmap(self._generate_labels_single_day, pass_me)
-        df = pd.DataFrame(res, columns=['Y','Ratio'])
+        df = pd.DataFrame(res, columns=['Y', 'Ratio'])
         df['Patient'] = pats  # we use the fact that map() returns are ordered
         df['Day'] = days
-        df = df.sort_values(
-            ['Day', 'Patient']).reset_index(drop=True)
+        df = df.sort_values(['Day', 'Patient']).reset_index(drop=True)
         return df

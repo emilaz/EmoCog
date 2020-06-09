@@ -54,7 +54,7 @@ class DataProvider:
         """ Function to generate the feats and labels, given the input hyperparas
         Input:  Configs, i.e. Windowsize, sliding window, start and end (in s), train bool, variance to be explained,
                 cutoff if classification.
-        Output: Features, Labels
+        Output: DF containing basic info, features, bad indices, y and good_ratio.
         """
         # train data
         if 'expvar' not in configs.keys():
@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
     provider = DataProvider()
 
-    patient = ['af859cc5']
-    days = [[2,3,4,5]]
+    patient = ['d6532718']
+    days = [[3,4,5,6,7,8]]
     # patient = ['cb46fd46', 'af859cc5']
     # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
     wsize = 100
@@ -148,7 +148,6 @@ if __name__ == '__main__':
     configs['ratio'] = ratio
     configs['shuffle'] = shuffle
     print('los', configs)
-    #provider.reload_generators()
     provider.get_data(configs)
     # muell = provider.get_test_data(configs,
     #                                "/home/emil/EmoCog/data/new_labels/pca_models/"

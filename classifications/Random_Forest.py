@@ -88,8 +88,8 @@ def do_all(file, cut, reload=False):
         except FileNotFoundError as e:
             print(configs)
             print(e)
-            return
-    else:
+            reload = False
+    if not reload:
         res = calc_results_and_save(x, y, configs)
         # best classifier is the one with best AUC (PR or ROC)
         train_and_save_best_classifier(res, x, y, configs)
@@ -110,9 +110,9 @@ def randomize_labels(y):
 if __name__ == '__main__':
     # files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
     #          if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['e5bad52f']")]
-    cuts = [.3, .5, .7]
-    reload = [True]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['d6532718']")]
+    cuts = [.3, .5]
+    reload = [False]
     all_elements = [files, cuts, reload]
 
     file_cut_combos = []

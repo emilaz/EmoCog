@@ -18,23 +18,19 @@ def _generate_raws_single_day(patient, day, overwrite=False):
             overwrite = True
     if overwrite:
         path_ecog, path_vid = sutil.find_paths(patient, day)
-        realtime_start, realtime_end = sutil.find_start_and_end_time(path_vid)  # output in secs from midnight
-        if realtime_start < 7 * 3600:  # if it's before 7AM, reset it to 7 AM
-            realtime_start = 7 * 3600
-        if realtime_end > 23 * 3600:
-            realtime_end = 23 * 3600  # if it's after 23PM, reset to 23PM
-        if realtime_start >= realtime_end:
+        vid_start, ecog_start, vid_end, ecog_end = sutil.find_start_and_end_time(path_vid, path_ecog)  # output in secs from midnight
+        if vid_start >= vid_end:
             print('For patient {}, day {}, starting time was after end time. Returning None'.format(patient, day))
             return None
-        print('Day {}, start time is {} , end time is {}'.format(day, realtime_start, realtime_end))
-        feat_data = FeatDataHolder(path_ecog, realtime_start, realtime_end)
-        label_data = LabelDataHolder(path_vid, realtime_start, realtime_end, col='Happy')
+        print('Day {}, start time is {} , end time is {}'.format(day, vid_start, vid_end))
+        feat_data = FeatDataHolder(path_ecog, ecog_start, ecog_end)
+        label_data = LabelDataHolder(path_vid, vid_start, vid_end, col='Happy')
         # save feat data
         feat_link, label_link = save_raws_single_day(patient, day,
                                                      feat_data.get_bin_data(),
                                                      label_data.get_pred_bin(),
                                                      overwrite=True)
-        ret = [patient, day, realtime_start, realtime_end, feat_link,
+        ret = [patient, day, vid_start, vid_end, feat_link,
                label_link, np.array([f.upper() for f in feat_data.chan_labels])]
 
         # ret = [patient, day, realtime_start, realtime_end, feat_data.get_bin_data(),
@@ -44,13 +40,13 @@ def _generate_raws_single_day(patient, day, overwrite=False):
             pickle.dump(ret, f, protocol=pickle.HIGHEST_PROTOCOL)
         del feat_data
         del label_data
-        print('Results done. day {} patient {}'.format(day, patient))
+        print('Raws done. day {} patient {}'.format(day, patient))
     return ret
 
 
 def generate_raws(patients, days):
     pat_day_df = pd.DataFrame(columns=['Patient', 'Day'], data=zip(patients, days)).explode('Day')
-    p = Pool(8)
+    p = Pool(6)
     res = p.starmap(_generate_raws_single_day, pat_day_df.values)
     return res
 

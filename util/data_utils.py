@@ -60,6 +60,9 @@ def save_data_to_file(x, y, x_ev, y_ev, configs):
     Output: None
     """
     fname = generate_filename(configs, False)
+    # if folder doesn't exist, create
+    if not os.path.exists(os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets', str(configs['patient']))):
+        os.mkdir(os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets', str(configs['patient'])))
     link = os.path.join('/home/emil/EmoCog/data/new_labels/train_test_datasets', str(configs['patient']), fname)
     # save stuff to file:
     df = pd.DataFrame(data=[[x, y, x_ev, y_ev]], columns=['x_tr', 'y_tr', 'x_ev', 'y_ev'])
