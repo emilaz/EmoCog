@@ -21,43 +21,6 @@ def plot_all(link_to_ecog_file, configs):
     
     
 
-def plot_brain(chan_labels,num_grid_chans=64,colors=list()):
-#     mni_coords_fullfile='/nas/ecog_project/derived/electrode_mni_locations/cb46fd46_MNI_atlasRegions.xlsx'
-    mni_coords_fullfile = '/data2/users/stepeter/mni_coords/cb46fd46/cb46fd46_MNI_atlasRegions.xlsx'
-    'Plots ECoG electrodes from MNI coordinate file'
-    #Example code to run it: 
-         #import sys
-         #sys.path.append('/home/stepeter/AJILE/stepeter_sandbox/ECoG_Preprocessing')
-         #from plot_ecog_electrodes_mni import *
-
-         #mni_coords_fullfile='/data2/users/stepeter/mni_coords/a0f66459/a0f66459_MNI_atlasRegions.xlsx'
-         #plot_ecog_electrodes_mni_from_file_and_labels(mni_coords_fullfile,chan_num_min=-1,chan_num_max=-1,num_grid_chans=64)
-
-    #NOTE: A warning may pop up the first time running it, leading to no output. Rerun this function, and the plots should appear.
-
-    #Load in MNI file
-    mni_file = pd.read_excel(mni_coords_fullfile, delimiter=",")
-
-
-    #Create dataframe for electrode locations
-    locs=mni_file.loc[mni_file['Electrode'].isin(chan_labels)][['X coor', 'Y coor', 'Z coor']]
-    print(locs.shape)
-
-    #Label strips/depths differently for easier visualization (or use defined color list)
-    if len(colors)==0:
-        for s in range(locs.shape[0]):
-            if s>=num_grid_chans:
-                colors.append('r')
-            else:
-                colors.append('b')
-
-    #Plot the result
-    ni_plt.plot_connectome(np.eye(locs.shape[0]), locs, output_file=None,
-                           node_kwargs={'alpha': 0.5, 'edgecolors': None},
-                           node_size=10, node_color=colors)
-
-    
-    
 def plot_important_frequencies(imp_bins, title):
     plt.figure()
     df = pd.DataFrame({'Frequencies':['0-1', '2','3-4','5-8','9-16','17-32','33-64','65-150'], 'Importances': imp_bins})
@@ -84,8 +47,8 @@ def plot_important_electrodes(imp_electrodes,good_chans, title):
 
 def plot_brain_new(h5_fn=None,chan_labels='all',num_grid_chans=64,colors=None,node_size=50,
                                                   figsize=(16,6),sides_2_display='auto',node_edge_colors=None,
-                                                  alpha=0.5,edge_linewidths=3,ax_in=None,rem_zero_chans=False,
-                                                  allLH=False,zero_rem_thresh=.99,elec_col_suppl=None, title=None):
+                                                  alpha=0.5,edge_linewidths=3,ax_in=None,
+                                                  allLH=False, title=None):
     """
     Plots ECoG electrodes from MNI coordinate file (only for specified labels)
     
@@ -103,21 +66,27 @@ def plot_brain_new(h5_fn=None,chan_labels='all',num_grid_chans=64,colors=None,no
     """ 
     
     # h5_fn = '/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_3.h5'
-    #Load channel locations
+    # Load channel locations
     chan_info = pd.read_hdf(h5_fn,key='chan_info',mode='r')
-    #change label names to conform to our allupper convention
+    # change label names to conform to our allupper convention
     chan_info.columns = [f.upper() for f in chan_info.columns]
-
-    #Create dataframe for electrode locations
-    locs = chan_info.loc[['X','Y','Z'],chan_labels].transpose()
+    #### JUST FOR NOW
+    colors = ['LOF' in r for r in chan_info.columns]
+    # colors = ['LTO' in r or 'LO' in r or 'LOF' in r for r in chan_info.columns]
+    # Create dataframe for electrode locations
+    if chan_labels == 'all':
+        locs = chan_info.loc[['X','Y','Z'],:].transpose()
+    else:
+        locs = chan_info.loc[['X','Y','Z'],chan_labels].transpose()
     locs.rename(columns={'X':'x','Y':'y','Z':'z'}, inplace=True)
-    #filter out
+    # filter out
     chan_loc_x = locs['x'].values
     
     #Remove NaN electrode locations (no location info)
     nan_drop_inds = np.nonzero(np.isnan(chan_loc_x))[0]
     locs.dropna(axis=0,inplace=True)  # remove NaN locations
-    colors = np.delete(colors, nan_drop_inds)
+
+    colors = list(np.delete(colors, nan_drop_inds))
 
     #Decide whether to plot L or R hemisphere based on x coordinates
     if len(sides_2_display)>1:
@@ -138,14 +107,14 @@ def plot_brain_new(h5_fn=None,chan_labels='all',num_grid_chans=64,colors=None,no
         locs2['y'] = np.concatenate((locs['y'][num_grid_chans:],locs['y'][:num_grid_chans]),axis=0)
         locs2['z'] = np.concatenate((locs['z'][num_grid_chans:],locs['z'][:num_grid_chans]),axis=0)
         
-        if isinstance(colors, list):
+        if isinstance(colors, list) or isinstance(colors, np.ndarray):
             colors2 = colors.copy()
             colors2 = colors[num_grid_chans:]+colors[:num_grid_chans]
         else:
             colors2 = colors
     else:
         locs2 = locs.copy()
-        if isinstance(colors, list):
+        if isinstance(colors, list) or isinstance(colors, np.ndarray):
             colors2 = colors.copy()
         else:
             colors2 = colors #[colors for i in range(locs2.shape[0])]
@@ -231,23 +200,27 @@ def add_colorbar(f_in,vmin,vmax,cmap,width=0.025,height=0.16,horiz_pos=.91,borde
     cbar.set_label(label_name,rotation=label_rotation,fontsize=label_fontsize,
                    weight=fontweight,labelpad=label_pad, y=label_y, fontname=fontname)
 
+
+
 if __name__ == '__main__':
-    patient = ['cb46fd46']
-    days = [[3,4,5,6,7]]
-    wsize = 100
-    sliding = 25
-    shuffle = False
-    expvar = 90
-    ratio = .8
-    configs = dict()
-    configs['patient'] = patient
-    configs['days'] = days
-    configs['wsize'] = wsize
-    configs['sliding'] = sliding
-    configs['expvar'] = expvar
-    configs['ratio'] = ratio
-    configs['shuffle'] = shuffle
-    configs['cutoff'] = .3
-    print('los', configs)
-    h5_fn = '/nas/ecog_project/derived/processed_ecog/cb46fd46/full_day_ecog/cb46fd46_fullday_3.h5'
-    plot_all(h5_fn, configs)
+    # patient = ['cb46fd46']
+    # days = [[3,4,5,6,7]]
+    # wsize = 100
+    # sliding = 25
+    # shuffle = False
+    # expvar = 90
+    # ratio = .8
+    # configs = dict()
+    # configs['patient'] = patient
+    # configs['days'] = days
+    # configs['wsize'] = wsize
+    # configs['sliding'] = sliding
+    # configs['expvar'] = expvar
+    # configs['ratio'] = ratio
+    # configs['shuffle'] = shuffle
+    # configs['cutoff'] = .3
+    # print('los', configs)
+    h5_fn = '/nas/ecog_project/derived/processed_ecog/e5bad52f/full_day_ecog/e5bad52f_fullday_3.h5'
+    # plot_all(h5_fn, configs)
+    plot_brain_new(h5_fn)
+    # plot_ecog_electrodes_mni_from_file_and_labels(h5_fn)

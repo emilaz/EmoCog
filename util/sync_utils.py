@@ -69,6 +69,7 @@ def find_start_and_end_time_video(vid_path):
     store.close()
     return int(start_seconds), int(end_seconds)
 
+
 def find_start_and_end_time_ecog(ecog_path):
     """
     This functions returns the start times for ecog for a given day.
@@ -89,31 +90,14 @@ def in_seconds(time):
     return (time.hour * 60 + time.minute) * 60 + time.second + time.microsecond * 1e-6
 
 
-def unix_to_utc(time):
-    """
-    Function that converts unix timestamp into utc time
-    :param time: unixtimestamp
-    :return: UTC time
-    """
-    ts = ceil(time)
-
-    print(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
-
-"""
-Function to filter bad/faulty data points. 
-Input: df containing x,y and bad indices
-Output: x,y filtered. concatenated over days and patients (day-first ordering)
-"""
-
 
 def filter_nans(df):
+    """
+    Function to filter bad/faulty data points.
+    Input: df containing x,y and bad indices
+    Output: x,y filtered. concatenated over days and patients (day-first ordering)
+    """
     # filter the bad feature indices for each day on label side
-    #### old
-    # y_no_feat_nans = np.delete(y, bad_feat_nans) # deprecated
-    # then, filter out the nans from label side:
-    # x_ret = x[:, ~np.isnan(y_no_feat_nans)]
-    # y_ret = y_no_feat_nans[~np.isnan(y_no_feat_nans)]
-    ####
     # first, filter the bad feature indices on label side for each patient,day
     df['Y_no_bad'] = [np.array([j for ix, j in enumerate(i[4]) if ix not in i[3]]) for i in df.values]
     x_clean = []

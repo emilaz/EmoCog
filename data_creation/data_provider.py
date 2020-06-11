@@ -130,8 +130,8 @@ if __name__ == '__main__':
 
     provider = DataProvider()
 
-    patient = ['d6532718']
-    days = [[3,4,5,6,7,8]]
+    patient = ['ab2431d9']
+    days = [[2, 3]]
     # patient = ['cb46fd46', 'af859cc5']
     # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
     wsize = 100

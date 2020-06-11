@@ -110,7 +110,7 @@ def randomize_labels(y):
 if __name__ == '__main__':
     # files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
     #          if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['d6532718']")]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['ab2431d9']")]
     cuts = [.3, .5]
     reload = [False]
     all_elements = [files, cuts, reload]

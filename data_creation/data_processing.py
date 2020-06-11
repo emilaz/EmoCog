@@ -75,9 +75,9 @@ def shuffle_data(x, y, ratio):
 def process(joined_df, good_chans, configs):
     # first, synchronize this shit
     x_clean, y_clean = util.filter_nans(joined_df)
-    if len(x_clean) != len(y_clean):
+    if x_clean.shape[1] != len(y_clean):
         raise ValueError('Lengths here are not the same. What happened? no. features {}, no. labels {}'.
-                         format(len(x_clean), len(y_clean)))
+                         format(len(x_clean), len(y_clean)), x_clean.shape)
     # next, separate into train and test
     # in theory, though very unlikely, due to the configs['sliding'] window,
     # there could still be train samples in the eval set as well.
