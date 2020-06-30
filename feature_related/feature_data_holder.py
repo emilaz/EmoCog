@@ -2,7 +2,6 @@ import sys
 
 sys.path.append('..')
 import h5py
-from .simple_edf_preprocessing import Preprocessor
 import numpy as np
 import pandas as pd
 
@@ -21,14 +20,13 @@ class FeatDataHolder:
         # sampling frequency and last sample taken
         df = h5py.File(path)
         chan_info = pd.read_hdf(path, key='chan_info')
-        # chan_info = df.attrs['chan_info'][()]
         self.sfreq = int(df['f_sample'][()])
         self.start = start
         self.end = end
-        # preprocess data
-        preprocessor = Preprocessor(df, chan_info, start_sample=round(self.start * self.sfreq),
-                                    end_sample=round(self.end * self.sfreq))
-        self.data, self.bad_chan = preprocessor.preprocess(prefiltered_sd_kurt=True)
+        start_sample = round(self.start * self.sfreq)
+        end_sample = round(self.end * self.sfreq)
+        self.data = df['dataset'][:, start_sample:end_sample]
+        self.bad_chan = ~(np.array([chan_info[c]['goodChanInds'] for c in chan_info.columns]).astype('bool'))
         self.data = self.data[self.bad_chan != True]
         self.chan_labels = np.array([c for c in chan_info.columns])[self.bad_chan != True]
         if len(self.data.flatten()) % 500 != 0:

@@ -34,7 +34,7 @@ def calc_results_and_save(x, y, configs):
     # dataframe for saving results
     results = pd.DataFrame(columns=('Number Estimators', 'Max Depth', 'Max Features', 'AVG PR'))  # ,'AUC ROC'))
     # do random search on parameters
-    no_params = 25
+    no_params = 35
     est = np.random.choice(np.arange(130)[5:], no_params)
     max_d = np.random.choice(np.arange(60)[1:], no_params)
     max_f = np.random.choice(np.arange(min(x.shape))[1:], no_params)
@@ -73,6 +73,7 @@ def vis_results(x, y, x_ev, y_ev, configs):
     # draw brain map and the most important hyperparameter
     # get brain map
     h5_fn = dutil.get_h5fn_file(configs['patient'][2:-2])
+    # print('WARNING. NO BRAIN IS CURRENTLY BEING PLOTTED. YOU SURE YOU WANT THIS?')
     bvis.plot_all(h5_fn, configs)
 
 def do_all(file, cut, reload=False):
@@ -95,6 +96,7 @@ def do_all(file, cut, reload=False):
         train_and_save_best_classifier(res, x, y, configs)
 
     vis_results(x, y, x_ev, y_ev, configs)
+    print('Done.', configs)
 
 
 def randomize_labels(y):
@@ -110,7 +112,15 @@ def randomize_labels(y):
 if __name__ == '__main__':
     # files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
     #          if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['ab2431d9']")]
+    lell = [itertools.combinations([3,4,5,6,7,8], c) for c in [5,6]]
+    day_combos = [str(list(v)) for s in lell for v in s]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['a0f66459']")]# if '[3, 4, 5, 6, 7, 8]' in f]
+             # for dayz in day_combos
+             # if '100' in f
+             # and dayz in f
+             # and 'shuffle_True' in f
+             # and 'sliding_False' in f]
+
     cuts = [.3, .5]
     reload = [False]
     all_elements = [files, cuts, reload]

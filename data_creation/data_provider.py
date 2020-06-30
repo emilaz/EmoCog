@@ -80,7 +80,7 @@ class DataProvider:
 
         return joined_df
 
-    def get_data(self, configs, reload=False):
+    def get_data(self, configs, reload=True):
         # if data already exists, simply reload
         if reload:
             try:
@@ -88,8 +88,9 @@ class DataProvider:
                 print('Loading Data from File..done')
             except FileNotFoundError:  # file doesn't exist
                 print('Data not on File.')
+                # reload = False
                 return
-        else:
+        if not reload:
             print(' Loading raw data into memory...')
             if not self.is_loaded:
                 self._load_raws(configs['patient'], configs['days'])
@@ -127,16 +128,17 @@ class DataProvider:
 
 
 if __name__ == '__main__':
-
     provider = DataProvider()
 
-    patient = ['ab2431d9']
-    days = [[2, 3]]
+    patient = ['a0f66459']
+    days = [[2,3,4,5,6,7,8]]
     # patient = ['cb46fd46', 'af859cc5']
     # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
     wsize = 100
-    sliding = 25
-    shuffle = False
+    # sliding = 25
+    sliding = False
+    # shuffle = False
+    shuffle = True
     expvar = 90
     ratio = .8
     configs = dict()
@@ -148,20 +150,27 @@ if __name__ == '__main__':
     configs['ratio'] = ratio
     configs['shuffle'] = shuffle
     print('los', configs)
-    provider.get_data(configs)
+    # provider.get_data(configs)
+    # configs['wsize'] = 5
+    # provider.get_data(configs)
     # muell = provider.get_test_data(configs,
     #                                "/home/emil/EmoCog/data/new_labels/pca_models/"
     #                                "patient_['cb46fd46', 'af859cc5']_days_[[3, 4, 5, 6, 7],"
     #                                " [3, 4, 5]]_wsize_100_sliding_25_expvar_90_ratio_0.8_shuffle_False.pkl")
 
     #
-    wsizes = [100, 50, 30, 5]
-    shuffle = [True, False]
-    combos = itertools.product(wsizes, shuffle)
-    configs['sliding'] = False
+    # wsizes = [100, 50, 30, 5]
+    wsizes = [100]
+    shuffle = [True]#, False]
+    lell = [itertools.combinations(days[0], c) for c in [6]]
+    day_combos = [list(v) for s in lell for v in s]
+    combos = itertools.product(day_combos, wsizes, shuffle)
+    # configs['sliding'] = False
     for c in combos:
-        configs['wsize'] = c[0]
-        configs['shuffle'] = c[1]
+        provider = DataProvider()
+        configs['days'] = [c[0]]
+        configs['wsize'] = c[1]
+        configs['shuffle'] = c[2]
         provider.get_data(configs)
 
     dutil.remove_temporary_data()

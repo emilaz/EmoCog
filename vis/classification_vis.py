@@ -36,6 +36,7 @@ def bar_plot_svc(scores_tr,scores_ev,gammas,thresholds = None):
             height = rect.get_height()
             plt.text(rect.get_x() + rect.get_width()-(higher/2.), height, '%.2f' % thresholds[idx], ha='center', va='bottom')      
     plt.show()
+    plt.close()
 
 def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
     plt.scatter(hyper,scores_tr,label='Train')
@@ -46,6 +47,7 @@ def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
     plt.ylabel('F1 - Score')
     plt.ylim(0,1)
     plt.show()
+    plt.close()
 
 
 
@@ -209,6 +211,7 @@ def plot_roc_random(df, title, train = True):
     plt.title(title)
     plt.legend(loc="lower right")
     plt.show()
+    plt.close()
 
 
 def conf_mat_random(df, train):
@@ -252,6 +255,7 @@ def conf_mat_random(df, train):
     plt.figure(figsize = (10,7))
     sn.heatmap(df_cm, annot=True,fmt='g',annot_kws={"size": 26})
     plt.show()
+    plt.close()
     return pr/count,rec/count,f1/count
 
  
@@ -275,3 +279,4 @@ def happy_ratio_random(df):
     plt.ylabel('Counts')
     plt.xlabel('Datset')
     plt.show()
+    plt.close()

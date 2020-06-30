@@ -109,7 +109,9 @@ def fill_frames(actual_labels, supposed_no_labels):
         actual_labels = actual_labels[:supposed_no_labels]
         if no_labels - supposed_no_labels > 10:
             print('ajoo', no_labels - supposed_no_labels)
-            raise ValueError('More than 10 frames are overshot here, somethings wrong')
+            print('newnewnew')
+            # raise ValueError('More than 10 frames are overshot here, somethings wrong')
+            # print()
     try:
         places[positions] = actual_labels
     except IndexError as e:

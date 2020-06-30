@@ -11,7 +11,7 @@ def get_important_electrodes_bins_goodchans(configs):
     pca_stuff = dutil.load_processing_tools(configs)
 
     good_chans = pca_stuff['GoodChans']
-    pca = pca_stuff['Model']  # this is our trained PCA
+    pca = pca_stuff['Model']  # this is our trained PCA model
     classifier = classifier_stuff[0]  # this is our trained Random Forest classifier
 
     importances = classifier.feature_importances_
