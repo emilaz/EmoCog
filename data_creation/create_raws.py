@@ -46,7 +46,7 @@ def _generate_raws_single_day(patient, day, overwrite=False):
 
 def generate_raws(patients, days):
     pat_day_df = pd.DataFrame(columns=['Patient', 'Day'], data=zip(patients, days)).explode('Day')
-    p = Pool(6)
+    p = Pool(8)
     res = p.starmap(_generate_raws_single_day, pat_day_df.values)
     return res
 

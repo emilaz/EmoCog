@@ -1,9 +1,14 @@
+from multiprocessing import set_start_method  # this fixes multiprocessing deadlock
+import sys
+
+sys.path.append('..')
 from feature_related.feature_generator import FeatureGenerator
 from label_related.label_generator import LabelGenerator
 import pandas as pd
 import util.data_utils as dutil
 import util.label_utils as lutil
 import sys
+import os
 import itertools
 from data_creation.create_raws import generate_raws
 from data_creation.data_processing import process, process_test
@@ -80,7 +85,7 @@ class DataProvider:
 
         return joined_df
 
-    def get_data(self, configs, reload=True):
+    def get_data(self, configs, reload=False):
         # if data already exists, simply reload
         if reload:
             try:
@@ -128,16 +133,23 @@ class DataProvider:
 
 
 if __name__ == '__main__':
-    provider = DataProvider()
+    set_start_method("spawn")
 
-    patient = ['a0f66459']
+    # best_w_standard = os.listdir('/home/emil/EmoCog/data/new_labels/train_test_datasets/best/')
+    # for b in best_w_standard:
+    #     provider = DataProvider()
+    #     configs = dutil.generate_configs_from_file(b)
+    #     provider.get_data(configs)
+
+    provider = DataProvider()
+    patient = ['abdb496b']
     days = [[2,3,4,5,6,7,8]]
-    # patient = ['cb46fd46', 'af859cc5']
-    # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
+    # # patient = ['cb46fd46', 'af859cc5']
+    # # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
     wsize = 100
-    # sliding = 25
+    # # sliding = 25
     sliding = False
-    # shuffle = False
+    # # shuffle = False
     shuffle = True
     expvar = 90
     ratio = .8
@@ -150,7 +162,7 @@ if __name__ == '__main__':
     configs['ratio'] = ratio
     configs['shuffle'] = shuffle
     print('los', configs)
-    # provider.get_data(configs)
+    provider.get_data(configs)
     # configs['wsize'] = 5
     # provider.get_data(configs)
     # muell = provider.get_test_data(configs,
@@ -160,18 +172,18 @@ if __name__ == '__main__':
 
     #
     # wsizes = [100, 50, 30, 5]
-    wsizes = [100]
-    shuffle = [True]#, False]
-    lell = [itertools.combinations(days[0], c) for c in [6]]
-    day_combos = [list(v) for s in lell for v in s]
-    combos = itertools.product(day_combos, wsizes, shuffle)
-    # configs['sliding'] = False
-    for c in combos:
-        provider = DataProvider()
-        configs['days'] = [c[0]]
-        configs['wsize'] = c[1]
-        configs['shuffle'] = c[2]
-        provider.get_data(configs)
+    # wsizes = [100]
+    # shuffle = [True]#, False]
+    # lell = [itertools.combinations(days[0], c) for c in [6]]
+    # day_combos = [list(v) for s in lell for v in s]
+    # combos = itertools.product(day_combos, wsizes, shuffle)
+    # # configs['sliding'] = False
+    # for c in combos:
+    #     provider = DataProvider()
+    #     configs['days'] = [c[0]]
+    #     configs['wsize'] = c[1]
+    #     configs['shuffle'] = c[2]
+    #     provider.get_data(configs)
 
     dutil.remove_temporary_data()
     sys.exit(0)

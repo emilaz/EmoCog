@@ -11,6 +11,7 @@ def standardize(data, std, data_mean):
     """
     data_dem = data - data_mean[:, None]
     data_stand = data_dem / (std[:, None])
+    # print('WARNING. NO STANDARDIZATION AT THE MOMENT. DO YOU WANT THIS?')
     # data_stand = data_dem
     return data_stand
 

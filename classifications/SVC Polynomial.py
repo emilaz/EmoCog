@@ -121,7 +121,7 @@ file_cut_combos = []
 for allel in product(*all_elements):
     file_cut_combos+=[allel]
     
-pool = mp.Pool(6)
+pool = mp.Pool(8)
 yass = pool.starmap(do_all,file_cut_combos)
 
 

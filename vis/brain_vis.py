@@ -13,12 +13,22 @@ from util.analysis_utils import get_important_electrodes_bins_goodchans
 from util.data_utils import generate_graph_link
 
 
-def plot_all(link_to_ecog_file, configs):
+def plot_all(link_to_ecog_file, configs, top_n=5):
+    """
+    Function that plots the 10 most important electrodes on the brain & most important frequency bin
+    :param link_to_ecog_file: we need the .h5 file containing the xyz coordinates
+    :param configs: configs of case we want to plot
+    :return:
+    """
     imp_electrodes, imp_bins, good_chans = get_important_electrodes_bins_goodchans(configs)
     title = generate_graph_link(configs)
     plot_important_frequencies(imp_bins, title)
     plot_important_electrodes(imp_electrodes, good_chans, title)
-    plot_brain_new(h5_fn=link_to_ecog_file, chan_labels=good_chans, colors=imp_electrodes, title=title)
+    best_elec_ind = imp_electrodes.argsort()[::-1][:top_n]
+    best_elec = imp_electrodes.copy()
+    best_elec[:] = 1
+    best_elec[best_elec_ind] = 0
+    plot_brain_new(h5_fn=link_to_ecog_file, chan_labels=good_chans, colors=best_elec, title=title)
 
 
 def plot_important_frequencies(imp_bins, title):
@@ -125,9 +135,9 @@ def plot_brain_new(h5_fn=None, chan_labels='all', num_grid_chans=64, colors=None
 
     # Plot the result
     _plot_electrodes(locs2, node_size, colors2, axes, sides_2_display, N, node_edge_colors, alpha, edge_linewidths)
-    add_colorbar(fig, min(colors2), max(colors2), 'viridis', label_name='')
-    fig.suptitle('Normalized Importance of Each Electrode Mapped to Brain', fontsize=14)
-    plt.savefig(title + ' Brain.png')
+    # add_colorbar(fig, min(colors2), max(colors2), 'viridis', label_name='')
+    # fig.suptitle('Normalized Importance of Each Electrode Mapped to Brain', fontsize=14)
+    plt.savefig(title + '_brain.eps', format='eps')
     # plt.savefig('justthebrain.png')
     plt.show()
     plt.close()
@@ -176,7 +186,8 @@ def _plot_electrodes(locs, node_size, colors, axes, sides_2_display, N, node_edg
             ni_plt.plot_connectome(np.eye(locs.shape[0]), locs, output_file=None,
                                    node_kwargs={'alpha': alpha, 'edgecolors': node_edge_colors,
                                                 'linewidths': edge_linewidths,
-                                                'cmap': 'viridis'},
+                                                # 'cmap': 'Paired'},
+                                                'cmap': 'tab20c'},
                                    node_size=node_size, node_color=colors, axes=axes[ind],
                                    display_mode=sides_2_display[ind])
             current_col += colspan

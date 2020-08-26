@@ -1,13 +1,13 @@
 import os
 import sys
 
-from sklearn import metrics
 
 sys.path.append('..')
 from util.eval_utils import *
 from util.classification_utils import get_optimal_threshold, get_prediction
 import seaborn as sns
-from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score,\
+    classification_report, confusion_matrix
 from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from scipy import interp
@@ -52,7 +52,7 @@ def plot_svc(scores_tr,scores_ev,hyper,label='Hyperpara'):
 
 
 def conf_mat(pred, true, path, title):
-    tn,fp,fn,tp = metrics.confusion_matrix(true, pred).ravel()
+    tn,fp,fn,tp = confusion_matrix(true, pred).ravel()
     rates = np.array([tp,fp,fn,tn]).reshape((2,2))
     df_cm = pd.DataFrame(rates, index = ['Pred Happy','Pred Not Happy'],columns = ['True Happy','True Not Happy'])
     plt.figure(figsize = (10,7))
@@ -64,7 +64,7 @@ def conf_mat(pred, true, path, title):
 
 
 def score_heatmap(pred, true, path, title):
-    met_dict = metrics.classification_report(true, pred, output_dict=True)
+    met_dict = classification_report(true, pred, output_dict=True)
     df = pd.DataFrame(met_dict)
     del df['weighted avg']
     acc = df['accuracy'].values

@@ -13,6 +13,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 import os
+import glob
 
 from itertools import product
 from multiprocessing import Pool
@@ -34,7 +35,7 @@ def calc_results_and_save(x, y, configs):
     # dataframe for saving results
     results = pd.DataFrame(columns=('Number Estimators', 'Max Depth', 'Max Features', 'AVG PR'))  # ,'AUC ROC'))
     # do random search on parameters
-    no_params = 35
+    no_params = 30
     est = np.random.choice(np.arange(130)[5:], no_params)
     max_d = np.random.choice(np.arange(60)[1:], no_params)
     max_f = np.random.choice(np.arange(min(x.shape))[1:], no_params)
@@ -72,7 +73,7 @@ def vis_results(x, y, x_ev, y_ev, configs):
 
     # draw brain map and the most important hyperparameter
     # get brain map
-    h5_fn = dutil.get_h5fn_file(configs['patient'][2:-2])
+    h5_fn = dutil.get_h5fn_file(configs['patient'][0])
     # print('WARNING. NO BRAIN IS CURRENTLY BEING PLOTTED. YOU SURE YOU WANT THIS?')
     bvis.plot_all(h5_fn, configs)
 
@@ -82,6 +83,7 @@ def do_all(file, cut, reload=False):
     print(configs)
     x, y, x_ev, y_ev = provider.get_data(configs, reload=True)
     print(x.shape, y.shape, x_ev.shape, y_ev.shape)
+    print("Happy: Train {} Test {}, Not Happy: Train {} Test {}".format(sum(y==1), sum(y_ev==1),sum(y==0), sum(y_ev==0)))
     if reload:
         try:
             dutil.load_results(configs, 'RF')
@@ -110,18 +112,19 @@ def randomize_labels(y):
 
 
 if __name__ == '__main__':
-    # files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['abdb496b']")]
     #          if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
-    lell = [itertools.combinations([3,4,5,6,7,8], c) for c in [5,6]]
-    day_combos = [str(list(v)) for s in lell for v in s]
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['a0f66459']")]# if '[3, 4, 5, 6, 7, 8]' in f]
-             # for dayz in day_combos
-             # if '100' in f
-             # and dayz in f
-             # and 'shuffle_True' in f
-             # and 'sliding_False' in f]
+    # lell = [itertools.combinations([3,4,5,6,7,8], c) for c in [5,6]]
+    # day_combos = [str(list(v)) for s in lell for v in s]
+    # files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']")
+    #          # for dayz in day_combos
+    #          if '100' in f
+    #          # and dayz in f
+    #          and 'shuffle_True' in f
+    #          and 'sliding_False' in f]
+    # files = [os.path.basename(f) for f in glob.glob('/home/emil/EmoCog/data/new_labels/train_test_datasets/**/*')]
 
-    cuts = [.3, .5]
+    cuts = [.3]
     reload = [False]
     all_elements = [files, cuts, reload]
 

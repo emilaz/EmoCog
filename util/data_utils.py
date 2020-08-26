@@ -29,6 +29,7 @@ def generate_configs_from_file(filename, cutoff=None):
     """
     split_list = np.array(filename.split('_'))
     configs = dict(zip(split_list[::2], split_list[1::2]))
+    configs['patient'] = ast.literal_eval(configs['patient'])
     configs['days'] = ast.literal_eval(configs['days'])
     configs['wsize'] = int(configs['wsize'])
     configs['ratio'] = float(configs['ratio'])
