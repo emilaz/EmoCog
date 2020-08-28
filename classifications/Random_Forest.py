@@ -112,7 +112,7 @@ def randomize_labels(y):
 
 
 if __name__ == '__main__':
-    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['abdb496b']")]
+    files = [f for f in os.listdir("/home/emil/EmoCog/data/new_labels/train_test_datasets/['cb46fd46']") if '100' in f and '5' in f ]
     #          if "['cb46" in f and "[[3, 4]]" not in f and '[[7]]' not in f]
     # lell = [itertools.combinations([3,4,5,6,7,8], c) for c in [5,6]]
     # day_combos = [str(list(v)) for s in lell for v in s]
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     #          and 'sliding_False' in f]
     # files = [os.path.basename(f) for f in glob.glob('/home/emil/EmoCog/data/new_labels/train_test_datasets/**/*')]
 
-    cuts = [.3]
+    cuts = [.2]
     reload = [False]
     all_elements = [files, cuts, reload]
 

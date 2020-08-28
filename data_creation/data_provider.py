@@ -142,12 +142,12 @@ if __name__ == '__main__':
     #     provider.get_data(configs)
 
     provider = DataProvider()
-    patient = ['abdb496b']
-    days = [[2,3,4,5,6,7,8]]
+    patient = ['cb46fd46']
+    days = [[3,4,5,6,7]]
     # # patient = ['cb46fd46', 'af859cc5']
     # # days = [[3, 4, 5, 6, 7], [3, 4, 5]]
     wsize = 100
-    # # sliding = 25
+    # sliding = 25
     sliding = False
     # # shuffle = False
     shuffle = True
@@ -163,8 +163,8 @@ if __name__ == '__main__':
     configs['shuffle'] = shuffle
     print('los', configs)
     provider.get_data(configs)
-    # configs['wsize'] = 5
-    # provider.get_data(configs)
+    configs['wsize'] = 5
+    provider.get_data(configs)
     # muell = provider.get_test_data(configs,
     #                                "/home/emil/EmoCog/data/new_labels/pca_models/"
     #                                "patient_['cb46fd46', 'af859cc5']_days_[[3, 4, 5, 6, 7],"

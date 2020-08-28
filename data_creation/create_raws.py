@@ -8,7 +8,8 @@ import pandas as pd
 from multiprocessing import Pool
 
 
-def _generate_raws_single_day(patient, day, overwrite=False):
+def _generate_raws_single_day(patient, day, overwrite=True):
+    print('Warning. OVERWRITING RAWS. DO WE WANT THAT?')
     if not overwrite:
         try:
             ret = _load_raws_single_day(patient, day)
